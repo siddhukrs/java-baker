@@ -15,6 +15,7 @@ import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.Assignment;
 import org.eclipse.jdt.core.dom.CastExpression;
 import org.eclipse.jdt.core.dom.ClassInstanceCreation;
+import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ConstructorInvocation;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
@@ -27,6 +28,8 @@ import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
+import org.json.JSONObject;
+
 import ca.uwaterloo.cs.se.inconsistency.core.model2.ClassElement;
 import ca.uwaterloo.cs.se.inconsistency.core.model2.MethodElement;
 import ca.uwaterloo.cs.se.inconsistency.core.model2.so.ImpreciseModel;
@@ -34,6 +37,8 @@ import ca.uwaterloo.cs.se.inconsistency.core.model2.so.ImpreciseModel;
 class MyASTVisitor extends ASTVisitor{
 	
 	private ImpreciseModel model;
+	private CompilationUnit cu;
+	private int cutype;
 	private HashMultimap<String, ClassElement> globalmethods=HashMultimap.create();//holds method return types for chains
 	private HashMultimap<String, ClassElement> globaltypes=HashMultimap.create();//holds variables, fields and method param types
 	private HashMultimap<Integer, ClassElement> printtypes=HashMultimap.create();//holds node start loc and possible types
@@ -46,10 +51,14 @@ class MyASTVisitor extends ASTVisitor{
 	private String classname = null;
 	private String superclassname=null;
 	private ArrayList<Object> interfaces=new ArrayList<Object>();
+	
 
 	
-	public MyASTVisitor(ImpreciseModel m) {
+	public MyASTVisitor(ImpreciseModel m, CompilationUnit cu, int cutype) 
+	{
 		this.model=m;
+		this.cu=cu;
+		this.cutype=cutype;
 	}
 	
 	public void printFields()
@@ -118,7 +127,6 @@ class MyASTVisitor extends ASTVisitor{
 	public void endVisit(MethodInvocation node)
 	{
 		//System.out.println("###"+node.getName().toString()+node.getRoot().toString());
-		
 		Expression e=node.getExpression();
 		if(e==null)
 		{
@@ -165,10 +173,10 @@ class MyASTVisitor extends ASTVisitor{
 				}
 			}
 		}
-		/*else if(e.toString().contains("System.out"))
+		else if(e.toString().contains("System."))
 		{
 			
-		}*/
+		}
 		else if(globaltypes.containsKey(e.toString()))
 		{
 			String exactname=null;
@@ -188,7 +196,7 @@ class MyASTVisitor extends ASTVisitor{
 					{
 						if(me!=null && me.getExactName().equals(node.getName().toString()) && node.arguments().size()==me.getParameters().size())
 						{
-								if(model.getClassForMethod(me.getId()).equals(ce.getId()))
+								if(model.getClassElementForMethod(me.getId()).getId().equals(ce.getId()))
 								{
 									tempmethods1.add(me);
 								}
@@ -224,17 +232,17 @@ class MyASTVisitor extends ASTVisitor{
 					//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
 					printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
 					//change affected types of e.toString() too
-					System.out.println("1&&&"+clist);
+					//System.out.println("1&&&"+clist);
 					for(Integer affectedNode:affectedTypes.get(printTypesMap.get(e.toString())))
 					{
 						printtypes.replaceValues(affectedNode, clist);
-						System.out.println("0");
+						//System.out.println("0");
 					}
 					
 					for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
 					{
 						Collection<MethodElement>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
-						System.out.println("1:"+affectedNode);
+						//System.out.println("1:"+affectedNode);
 							printmethods.replaceValues(affectedNode, temp);
 					}
 					printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
@@ -261,7 +269,7 @@ class MyASTVisitor extends ASTVisitor{
 				{
 					if(me.getExactName().equals(node.getName().toString()) && me!=null && me.getParameters().size()==node.arguments().size())
 					{	
-							if(model.getClassForMethod(me.getId()).equals(ce.getId()))
+							if(model.getClassElementForMethod(me.getId()).getId().equals(ce.getId()))
 							{
 								tempmethods1.add(me);
 							}
@@ -337,7 +345,7 @@ class MyASTVisitor extends ASTVisitor{
 				{
 					if(me.getExactName().equals(node.getName().toString()) && me!=null && me.getParameters().size()==node.arguments().size())
 					{	
-							if(model.getClassForMethod(me.getId()).equals(ce.getId()))
+							if(model.getClassElementForMethod(me.getId()).getId().equals(ce.getId()))
 							{
 								tempmethods1.add(me);
 							}
@@ -376,13 +384,13 @@ class MyASTVisitor extends ASTVisitor{
 					for(Integer affectedNode:affectedTypes.get(printTypesMap.get(e.toString())))
 					{
 						printtypes.replaceValues(affectedNode, clist);
-						System.out.println("0");
+						//System.out.println("0");
 					}
 					
 					for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
 					{
 						Collection<MethodElement>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
-						System.out.println("1:"+affectedNode);
+						//System.out.println("1:"+affectedNode);
 							printmethods.replaceValues(affectedNode, temp);
 					}
 					printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
@@ -393,8 +401,6 @@ class MyASTVisitor extends ASTVisitor{
 		{
 			Collection<MethodElement> melist=model.getCandidateMethods(node.getName().toString());
 			Set<MethodElement> methods=new HashSet<MethodElement>();
-			Set<MethodElement> tempmethods1=new HashSet<MethodElement>();
-			Set<MethodElement> tempmethods2=new HashSet<MethodElement>();
 			Set <ClassElement> clist= new HashSet<ClassElement>();
 			printMethodsMap.put(node.toString(),node.getStartPosition());
 			if(printTypesMap.containsKey(e.toString())==true)
@@ -429,17 +435,17 @@ class MyASTVisitor extends ASTVisitor{
 					//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
 					//printtypes.putAll(printTypesMap.get(e.toString()), clist);
 					//change affected types of e.toString() too
-					System.out.println("1&&&"+clist);
+					//System.out.println("1&&&"+clist);
 					for(Integer affectedNode:affectedTypes.get(printTypesMap.get(e.toString())))
 					{
 						printtypes.replaceValues(affectedNode, clist);
-						System.out.println("0");
+						//System.out.println("0");
 					}
 					
 					for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
 					{
 						Collection<MethodElement>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
-						System.out.println("1:"+affectedNode);
+						//System.out.println("1:"+affectedNode);
 							printmethods.replaceValues(affectedNode, temp);
 					}
 					printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
@@ -459,11 +465,11 @@ class MyASTVisitor extends ASTVisitor{
 				if(ce.getId().equals(cname))
 				{
 					flag=1;
-					System.out.println("777777777777777"+me.getId());
+					//System.out.println("777777777777777"+me.getId());
 				}
 				else
 				{
-					System.out.println("00000000000"+me.getId());
+					//System.out.println("00000000000"+me.getId());
 				}
 			}
 			if(flag==1)
@@ -645,7 +651,7 @@ class MyASTVisitor extends ASTVisitor{
 					//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
 					//printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
 					//change affected types of e.toString() too
-					System.out.println("1&&&"+clist);
+					//System.out.println("1&&&"+clist);
 					printtypes.replaceValues(node.getStartPosition(), clist);
 					//System.out.println(affectedTypes);
 			}
@@ -680,7 +686,6 @@ class MyASTVisitor extends ASTVisitor{
 					Collection<ClassElement> celist=model.getCandidateClasses(node.getType().toString());
 					for(ClassElement ce : celist)
 					{
-						Set<String> methods=ImpreciseModel.checkMethodInClass(ce.getId(),md.getName().toString(),md.parameters().size());
 						Collection<MethodElement>melist=ce.getMethods();
 						for(MethodElement me:melist)
 						{
@@ -705,7 +710,7 @@ class MyASTVisitor extends ASTVisitor{
 				{
 					if(me.exactMethodName().equals("<init>") && me.getParameters().size()==node.arguments().size())
 					{
-						System.out.println("##########"+node.getParent().getParent().getStartPosition()+node.getType().getStartPosition());
+						//System.out.println("##########"+node.getParent().getParent().getStartPosition()+node.getType().getStartPosition());
 						printmethods.put(node.getType().getStartPosition(),me);
 						affectedMethods.put(node.getParent().getParent().getStartPosition(), node.getType().getStartPosition());
 						//printtypes.put(node.getType().getStartPosition(), model.getClassElementForMethod(me.getId()));
@@ -719,7 +724,7 @@ class MyASTVisitor extends ASTVisitor{
 
 	public void endVisit(ClassInstanceCreation node)
 	{	
-		System.out.println(node.getType().toString()+"0000"+node.toString()+"0000"+node.getParent().getParent());
+		//System.out.println(node.getType().toString()+"0000"+node.toString()+"0000"+node.getParent().getParent());
 		Collection<ClassElement> ce=model.getCandidateClasses(node.getType().toString());
 		for(ClassElement c : ce)
 		{
@@ -782,7 +787,102 @@ class MyASTVisitor extends ASTVisitor{
 		return true;
 	}
 
+	public void printJson()
+	{
+		checkForNull();
+
+		//Add to primitive and uncomment to remove unwanted elements
+		//String[] primitive = {"int","float","char","long","boolean","String","byte[]","String[]","int[]","float[]","char[]","long[]","byte"};
+		String[] primitive={};
+		JSONObject main_json=new JSONObject();
+
+		for(Integer key:printtypes.keySet())
+		{
+			int flag=0;
+			String cname=null;
+			List<String> namelist = new ArrayList<String>();
+			for(ClassElement type_name:printtypes.get(key))
+			{
+				int isprimitive=0;
+				for(String primitive_type : primitive)
+				{
+					if(type_name.getId().equals(primitive_type)==true)
+					{
+						isprimitive=1;
+						break;
+					}           							
+				}
+				if(isprimitive==0)
+				{
+					namelist.add("\""+type_name+"\"");
+					if(flag==0)
+					{
+						cname=type_name.getExactName();
+						flag=1;
+					}
+				}
+
+			}
+			if(namelist.isEmpty()==false)
+			{
+				JSONObject json = new JSONObject();
+				json.accumulate("line_number",Integer.toString(cu.getLineNumber(key)-cutype));
+				json.accumulate("precision", Integer.toString(printtypes.get(key).size()));
+				json.accumulate("name",cname);
+				json.accumulate("elements",namelist);
+				json.accumulate("type","api_type");
+				json.accumulate("character", Integer.toString(key));
+				main_json.accumulate("api_elements", json);
+			}
+
+		}
+		for(Integer key:printmethods.keySet())
+		{
+			List<String> namelist = new ArrayList<String>();
+			String mname=null;
+			for(MethodElement method_name:printmethods.get(key))
+			{
+				namelist.add("\""+method_name+"\"");
+				mname=method_name.getExactName();
+			}
+			if(namelist.isEmpty()==false)
+			{
+				JSONObject json = new JSONObject();
+				json.accumulate("line_number",Integer.toString(cu.getLineNumber(key)-cutype));
+				json.accumulate("precision", Integer.toString(printmethods.get(key).size()));
+				json.accumulate("name",mname);
+				json.accumulate("elements",namelist);
+				json.accumulate("type","api_method");
+				json.accumulate("character", Integer.toString(key));
+				main_json.accumulate("api_elements", json);
+			}
+			//System.out.println(main_json.toString());
+		}
+		if(main_json.isNull("api_elements"))
+		{
+			System.out.println("{\"api_elements\": [{ \"precision\": \"\",\"name\": \"\",\"line_number\": \"\",\"type\": \"\",\"elements\": \"\"}]}" ); 
+		}
+		else
+		{
+			System.out.println(main_json.toString(3));
+		}
+	}
 	
+	public void checkForNull()
+	{
+		for(Integer key : printtypes.keySet())
+			for(ClassElement type_name:printtypes.get(key))
+			{
+				if(type_name==null)
+					printtypes.remove(key, type_name);
+			}
+		for(Integer key : printmethods.keySet())
+			for(MethodElement method_name:printmethods.get(key))
+			{
+				if(method_name==null)
+					printmethods.remove(key, method_name);
+			}
+	}
 	
 	
 }
