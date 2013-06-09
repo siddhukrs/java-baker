@@ -705,9 +705,9 @@ class MyASTVisitor extends ASTVisitor{
 				{
 					if(me.exactMethodName().equals("<init>") && me.getParameters().size()==node.arguments().size())
 					{
-						System.out.println("##########"+node.getStartPosition()+node.getType().getStartPosition());
+						System.out.println("##########"+node.getParent().getParent().getStartPosition()+node.getType().getStartPosition());
 						printmethods.put(node.getType().getStartPosition(),me);
-						//affectedMethods.put(node.getExpression().getStartPosition(), node.getType().getStartPosition());
+						affectedMethods.put(node.getParent().getParent().getStartPosition(), node.getType().getStartPosition());
 						//printtypes.put(node.getType().getStartPosition(), model.getClassElementForMethod(me.getId()));
 						//System.out.println("class inst:"+node.getType()+":"+ImpreciseModel.getClassForMethod(me));
 					}
@@ -719,6 +719,7 @@ class MyASTVisitor extends ASTVisitor{
 
 	public void endVisit(ClassInstanceCreation node)
 	{	
+		System.out.println(node.getType().toString()+"0000"+node.toString()+"0000"+node.getParent().getParent());
 		Collection<ClassElement> ce=model.getCandidateClasses(node.getType().toString());
 		for(ClassElement c : ce)
 		{
@@ -777,11 +778,7 @@ class MyASTVisitor extends ASTVisitor{
 				
 			}
 		}
-		//if(node.getRightHandSide().getNodeType()==14)
-		{
-			System.out.println("$$$"+node.getRightHandSide().getNodeType());
-			
-		}
+		
 		return true;
 	}
 
