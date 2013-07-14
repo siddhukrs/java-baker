@@ -29,20 +29,18 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.json.JSONObject;
+import org.neo4j.graphdb.Node;
 
-import ca.uwaterloo.cs.se.inconsistency.core.model2.ClassElement;
-import ca.uwaterloo.cs.se.inconsistency.core.model2.MethodElement;
-import ca.uwaterloo.cs.se.inconsistency.core.model2.so.ImpreciseModel;
 
-class MyASTVisitor extends ASTVisitor{
+class MyNewASTVisitor extends ASTVisitor{
 	
-	private ImpreciseModel model;
+	private GraphDatabase model;
 	private CompilationUnit cu;
 	private int cutype;
-	private HashMultimap<String, ClassElement> globalmethods=HashMultimap.create();//holds method return types for chains
-	private HashMultimap<String, ClassElement> globaltypes=HashMultimap.create();//holds variables, fields and method param types
-	private HashMultimap<Integer, ClassElement> printtypes=HashMultimap.create();//holds node start loc and possible types
-	private HashMultimap<Integer, MethodElement> printmethods=HashMultimap.create();//holds node start posns and possible methods they can be
+	private HashMultimap<String, Node> globalmethods=HashMultimap.create();//holds method return types for chains
+	private HashMultimap<String, Node> globaltypes=HashMultimap.create();//holds variables, fields and method param types
+	private HashMultimap<Integer, Node> printtypes=HashMultimap.create();//holds node start loc and possible types
+	private HashMultimap<Integer, Node> printmethods=HashMultimap.create();//holds node start posns and possible methods they can be
 	private HashMap<String, Integer> printTypesMap=new HashMap<String, Integer>();//maps node start loc to variable names
 	private HashMap<String, Integer> printMethodsMap=new HashMap<String, Integer>();//holds node start locs with method names
 	private HashMultimap<Integer, Integer> affectedTypes = HashMultimap.create();//holds node start locs with list of start locs they influence
@@ -54,11 +52,12 @@ class MyASTVisitor extends ASTVisitor{
 	
 
 	
-	public MyASTVisitor(ImpreciseModel m, CompilationUnit cu, int cutype) 
+	public MyNewASTVisitor(GraphDatabase db, CompilationUnit cu, int cutype) 
 	{
-		this.model=m;
+		this.model=db;
 		this.cu=cu;
 		this.cutype=cutype;
+		//db.test();
 	}
 	
 	public void printFields()
@@ -75,14 +74,16 @@ class MyASTVisitor extends ASTVisitor{
 	
 	public void endVisit(VariableDeclarationStatement node)
 	{
+		//System.out.println("visiting");
 		for(int j=0;j<node.fragments().size();j++)
 		{
-			Collection<ClassElement> celist=model.getCandidateClasses(node.getType().toString());
-			for(ClassElement ce : celist)
+			//System.out.println(node.getType().toString());
+			Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
+			for(Node ce : celist)
 			{
+				System.out.println(ce.getProperty("id"));
 				if(ce!=null)
 				{
-					System.out.println("!!!!"+ce.getId());
 					globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), ce);
 					printtypes.put(node.getType().getStartPosition(), ce);
 					printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
@@ -95,10 +96,10 @@ class MyASTVisitor extends ASTVisitor{
 	{
 		for(int j=0;j<node.fragments().size();j++)
 		{	
-			Collection<ClassElement> types=new HashSet<ClassElement>();	
+			Collection<Node> types=new HashSet<Node>();	
 			if(node.getType().getNodeType()==74)
-			{	Collection<ClassElement> celist=model.getCandidateClasses(((ParameterizedType)node.getType()).getType().toString());
-			for(ClassElement ce : celist)
+			{	Collection<Node> celist=model.getCandidateClassNodes(((ParameterizedType)node.getType()).getType().toString());
+			for(Node ce : celist)
 			{
 				if(ce!=null)
 				{
@@ -111,8 +112,8 @@ class MyASTVisitor extends ASTVisitor{
 			}
 			else
 			{	
-			Collection<ClassElement> celist=model.getCandidateClasses(node.getType().toString());
-			for(ClassElement ce : celist)
+			Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
+			for(Node ce : celist)
 			{
 				if(ce!=null){
 					types.add(ce);
@@ -127,7 +128,7 @@ class MyASTVisitor extends ASTVisitor{
 
 	public void endVisit(MethodInvocation node)
 	{
-		//System.out.println("###"+node.getName().toString());
+		//System.out.println("###"+node.getName().toString()+node.getRoot().toString());
 		Expression e=node.getExpression();
 		if(e==null)
 		{
@@ -137,20 +138,20 @@ class MyASTVisitor extends ASTVisitor{
 				 * Handles inheritance, where methods from superclasses can be directly called
 				 * 
 				 */
-				Collection<ClassElement> celist=model.getCandidateClasses(superclassname);
-				for(ClassElement ce : celist)
+				Collection<Node> celist=model.getCandidateClassNodes(superclassname);
+				for(Node ce : celist)
 				{
-					Collection<MethodElement> melist=ce.getMethods();
-					for(MethodElement me : melist)
+					Collection<Node> melist=model.getMethodNodes(ce);
+					for(Node me : melist)
 					{
-						if(me.getExactName().toString().equals(node.getName().toString()))
+						if(((String)me.getProperty("exactName")).equals(node.getName().toString()))
 						{
-							if(me.getParameters().size()==node.arguments().size())
+							if(model.getMethodParams(me).size()==node.arguments().size())
 							{
-								printtypes.put(node.getStartPosition(),model.getClassElementForMethod(me.getId()));
+								printtypes.put(node.getStartPosition(),model.getMethodContainer(me));
 								printmethods.put(node.getStartPosition(), me);
-								if(me.getReturnElement().getType()!=null)
-									globalmethods.put(node.getName().toString(),me.getReturnElement().getType());
+								if(model.getMethodReturn(me)!=null)
+									globalmethods.put(node.getName().toString(),model.getMethodReturn(me));
 							}	
 						}
 					}
@@ -161,15 +162,15 @@ class MyASTVisitor extends ASTVisitor{
 				/*
 				 * Might be user declared helper functions or maybe object reference is assumed to be obv in the snippet
 				 */
-				Collection<MethodElement> melist=model.getCandidateMethods(node.getName().toString());
-				for(MethodElement me : melist)
+				Collection<Node> melist=model.getCandidateMethodNodes(node.getName().toString());
+				for(Node me : melist)
 				{
-					if(me.getParameters().size()==node.arguments().size())
+					if(model.getMethodParams(me).size()==node.arguments().size())
 					{
-						printtypes.put(node.getName().getStartPosition(), model.getClassElementForMethod(me.getId()));
+						printtypes.put(node.getName().getStartPosition(), model.getMethodContainer(me));
 						printmethods.put(node.getName().getStartPosition(), me);
-						if(me.getReturnElement().getType()!=null)
-							globalmethods.put(node.toString(),me.getReturnElement().getType());
+						if(model.getMethodReturn(me)!=null)
+							globalmethods.put(node.toString(),model.getMethodReturn(me));
 					}
 				}
 			}
@@ -181,23 +182,23 @@ class MyASTVisitor extends ASTVisitor{
 		else if(globaltypes.containsKey(e.toString()))
 		{
 			String exactname=null;
-			Set<MethodElement> methods=new HashSet<MethodElement>();
-			Set<MethodElement> tempmethods1=new HashSet<MethodElement>();
-			Set<MethodElement> tempmethods2=new HashSet<MethodElement>();
-			Set <ClassElement> clist= new HashSet<ClassElement>();
-			Set <ClassElement> celist=globaltypes.get(e.toString());
+			Set<Node> methods=new HashSet<Node>();
+			Set<Node> tempmethods1=new HashSet<Node>();
+			Set<Node> tempmethods2=new HashSet<Node>();
+			Set <Node> clist= new HashSet<Node>();
+			Set <Node> celist=globaltypes.get(e.toString());
 			printMethodsMap.put(node.toString(),node.getStartPosition());
 			affectedTypes.put(printTypesMap.get(e.toString()), node.getExpression().getStartPosition());
 			affectedMethods.put(printTypesMap.get(e.toString()), node.getName().getStartPosition());
-			for(ClassElement ce:celist)
+			for(Node ce:celist)
 			{
-					exactname=ce.getExactName();
-					Collection<MethodElement> melist = ce.getMethods();
-					for(MethodElement me : melist)
+					exactname=(String) ce.getProperty("exactName");
+					Collection<Node> melist = model.getMethodNodes(ce);
+					for(Node me : melist)
 					{
-						if(me!=null && me.getExactName().equals(node.getName().toString()) && node.arguments().size()==me.getParameters().size())
+						if(me!=null && ((String)me.getProperty("exactName")).equals(node.getName().toString()) && node.arguments().size()==model.getMethodParams(me).size())
 						{
-								if(model.getClassElementForMethod(me.getId()).getId().equals(ce.getId()))
+								if(((String)model.getMethodContainer(me).getProperty("id")).equals((String)ce.getProperty("id")))
 								{
 									tempmethods1.add(me);
 								}
@@ -215,14 +216,14 @@ class MyASTVisitor extends ASTVisitor{
 					{
 						methods=tempmethods2;
 					}
-					for(MethodElement m : methods)
+					for(Node m : methods)
 					{
 							printmethods.put(node.getName().getStartPosition(), m);
-							ClassElement fcname=model.getClassElementForMethod(m.getId());
-							if(fcname!=null && fcname.getExactName().equals(exactname)==true)
+							Node fcname=model.getMethodContainer(m);
+							if(fcname!=null && ((String)fcname.getProperty("exactName")).equals(exactname)==true)
 								clist.add(fcname);
-							if(m.getReturnElement().toString()!=null)
-								globalmethods.put(node.toString(), m.getReturnElement().getType());
+							if(model.getMethodReturn(m)!=null)
+								globalmethods.put(node.toString(), model.getMethodReturn(m));
 					}
 			}
 			//clist has the list of class names extracted from the methodname that match the exactname
@@ -242,7 +243,7 @@ class MyASTVisitor extends ASTVisitor{
 					
 					for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
 					{
-						Collection<MethodElement>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
+						Collection<Node>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
 						//System.out.println("1:"+affectedNode);
 							printmethods.replaceValues(affectedNode, temp);
 					}
@@ -254,23 +255,23 @@ class MyASTVisitor extends ASTVisitor{
 		else if(e.toString().matches("[A-Z][a-zA-Z]*"))
 		{
 			String exactname="";
-			Collection<ClassElement> celist=model.getCandidateClasses(e.toString());
-			Set<MethodElement> methods=new HashSet<MethodElement>();
-			Set<MethodElement> tempmethods1=new HashSet<MethodElement>();
-			Set<MethodElement> tempmethods2=new HashSet<MethodElement>();
-			Set <ClassElement> clist= new HashSet<ClassElement>();
+			Collection<Node> celist=model.getCandidateClassNodes(e.toString());
+			Set<Node> methods=new HashSet<Node>();
+			Set<Node> tempmethods1=new HashSet<Node>();
+			Set<Node> tempmethods2=new HashSet<Node>();
+			Set <Node> clist= new HashSet<Node>();
 			printMethodsMap.put(node.toString(),node.getStartPosition());
 			//affectedTypes.put(printTypesMap.get(e.toString()), node.getExpression().getStartPosition());
 			//affectedMethods.put(printTypesMap.get(e.toString()), node.getName().getStartPosition());
-			for(ClassElement ce : celist)
+			for(Node ce : celist)
 			{
-				exactname=ce.getExactName();
-				Collection<MethodElement> melist = ce.getMethods();
-				for(MethodElement me : melist)
+				exactname=(String) ce.getProperty("exactName");
+				Collection<Node> melist = model.getMethodNodes(ce);
+				for(Node me : melist)
 				{
-					if(me.getExactName().equals(node.getName().toString()) && me!=null && me.getParameters().size()==node.arguments().size())
+					if(((String)me.getProperty("exactName")).equals(node.getName().toString()) && me!=null && model.getMethodParams(me).size()==node.arguments().size())
 					{	
-							if(model.getClassElementForMethod(me.getId()).getId().equals(ce.getId()))
+							if(((String)model.getMethodContainer(me).getProperty("id")).equals((String)ce.getProperty("id")))
 							{
 								tempmethods1.add(me);
 							}
@@ -288,14 +289,14 @@ class MyASTVisitor extends ASTVisitor{
 				{
 					methods=tempmethods2;
 				}
-				for(MethodElement m : methods)
+				for(Node m : methods)
 				{
 					printmethods.put(node.getName().getStartPosition(), m);
-					ClassElement fcname=model.getClassElementForMethod(m.getId());
-					if(fcname!=null && fcname.getExactName().equals(exactname)==true)
+					Node fcname=model.getMethodContainer(m);
+					if(fcname!=null && ((String)fcname.getProperty("exactName")).equals(exactname)==true)
 						clist.add(fcname);
-					if(m.getReturnElement().toString()!=null)
-						globalmethods.put(node.toString(),m.getReturnElement().getType());
+					if(model.getMethodReturn(m)!=null)
+						globalmethods.put(node.toString(),model.getMethodReturn(m));
 				}
 			}
 			
@@ -330,23 +331,23 @@ class MyASTVisitor extends ASTVisitor{
 		else if(globalmethods.containsKey(e.toString()))
 		{
 			String exactname="";
-			Set<ClassElement> celist=globalmethods.get(e.toString());
-			Set<MethodElement> methods=new HashSet<MethodElement>();
-			Set<MethodElement> tempmethods1=new HashSet<MethodElement>();
-			Set<MethodElement> tempmethods2=new HashSet<MethodElement>();
-			Set <ClassElement> clist= new HashSet<ClassElement>();
+			Set<Node> celist=globalmethods.get(e.toString());
+			Set<Node> methods=new HashSet<Node>();
+			Set<Node> tempmethods1=new HashSet<Node>();
+			Set<Node> tempmethods2=new HashSet<Node>();
+			Set <Node> clist= new HashSet<Node>();
 			printMethodsMap.put(node.toString(),node.getStartPosition());
 			//affectedTypes.put(printTypesMap.get(e.toString()), node.getExpression().getStartPosition());
 			//affectedMethods.put(printTypesMap.get(e.toString()), node.getName().getStartPosition());
-			for(ClassElement ce : celist)
+			for(Node ce : celist)
 			{
-				exactname=ce.getExactName();
-				Collection<MethodElement> melist = ce.getMethods();
-				for(MethodElement me : melist)
+				exactname=(String) ce.getProperty("exactName");
+				Collection<Node> melist = model.getMethodNodes(ce);
+				for(Node me : melist)
 				{
-					if(me.getExactName().equals(node.getName().toString()) && me!=null && me.getParameters().size()==node.arguments().size())
+					if(((String)me.getProperty("exactName")).equals(node.getName().toString()) && me!=null && model.getMethodParams(me).size()==node.arguments().size())
 					{	
-							if(model.getClassElementForMethod(me.getId()).getId().equals(ce.getId()))
+							if(((String)model.getMethodContainer(me).getProperty("id")).equals((String)ce.getProperty("id")))
 							{
 								tempmethods1.add(me);
 							}
@@ -364,14 +365,14 @@ class MyASTVisitor extends ASTVisitor{
 				{
 					methods=tempmethods2;
 				}
-				for(MethodElement m : methods)
+				for(Node m : methods)
 				{
 					printmethods.put(node.getName().getStartPosition(), m);
-					ClassElement fcname=model.getClassElementForMethod(m.getId());
-					if(fcname!=null && fcname.getExactName().equals(exactname)==true)
+					Node fcname=model.getMethodContainer(m);
+					if(fcname!=null && ((String)fcname.getProperty("exactName")).equals(exactname)==true)
 						clist.add(fcname);
-					if(m.getReturnElement().toString()!=null)
-						globalmethods.put(node.toString(),m.getReturnElement().getType());
+					if(model.getMethodReturn(m)!=null)
+						globalmethods.put(node.toString(),model.getMethodReturn(m));
 				}
 			}
 			
@@ -390,7 +391,7 @@ class MyASTVisitor extends ASTVisitor{
 					
 					for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
 					{
-						Collection<MethodElement>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
+						Collection<Node>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
 						//System.out.println("1:"+affectedNode);
 							printmethods.replaceValues(affectedNode, temp);
 					}
@@ -400,31 +401,31 @@ class MyASTVisitor extends ASTVisitor{
 		}
 		else
 		{
-			Collection<MethodElement> melist=model.getCandidateMethods(node.getName().toString());
-			Set<MethodElement> methods=new HashSet<MethodElement>();
-			Set <ClassElement> clist= new HashSet<ClassElement>();
+			Collection<Node> melist=model.getCandidateMethodNodes(node.getName().toString());
+			Set<Node> methods=new HashSet<Node>();
+			Set <Node> clist= new HashSet<Node>();
 			printMethodsMap.put(node.toString(),node.getStartPosition());
 			if(printTypesMap.containsKey(e.toString())==true)
 			{
 				affectedTypes.put(printTypesMap.get(e.toString()), node.getExpression().getStartPosition());
 				affectedMethods.put(printTypesMap.get(e.toString()), node.getName().getStartPosition());
 			}
-			for(MethodElement me : melist)
+			for(Node me : melist)
 			{
-				if(me.getExactName().equals(node.getName().toString()) && me!=null && me.getParameters().size()==node.arguments().size())
+				if(((String)me.getProperty("id")).equals(node.getName().toString()) && me!=null && model.getMethodParams(me).size()==node.arguments().size())
 				{	
 					methods.add(me);
 				}
 			}
 			
-			for(MethodElement m : methods)
+			for(Node m : methods)
 			{
-				ClassElement fcname=model.getClassElementForMethod(m.getId());
+				Node fcname=model.getMethodContainer(m);
 				if(fcname!=null)
 					clist.add(fcname);
 				printmethods.put(node.getName().getStartPosition(), m);
-				if(m.getReturnElement().toString()!=null)
-					globalmethods.put(node.toString(),m.getReturnElement().getType());
+				if(model.getMethodReturn(m)!=null)
+					globalmethods.put(node.toString(),model.getMethodReturn(m));
 			}
 
 			if(clist.isEmpty()==false)
@@ -445,7 +446,7 @@ class MyASTVisitor extends ASTVisitor{
 					
 					for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
 					{
-						Collection<MethodElement>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
+						Collection<Node>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
 						//System.out.println("1:"+affectedNode);
 							printmethods.replaceValues(affectedNode, temp);
 					}
@@ -455,15 +456,15 @@ class MyASTVisitor extends ASTVisitor{
 		}
 	}
 
-	private Collection<MethodElement> getReplacementClassList(Set<MethodElement> set,	Set<ClassElement> clist) {
-		Collection<MethodElement> returnSet=new HashSet<MethodElement>();
-		for(MethodElement me: set)
+	private Collection<Node> getReplacementClassList(Set<Node> set,	Set<Node> clist) {
+		Collection<Node> returnSet=new HashSet<Node>();
+		for(Node me: set)
 		{
-			String cname=me.getClassName();
+			String cname=(String) model.getMethodContainer(me).getProperty("id");
 			int flag=0;
-			for(ClassElement ce:clist)
+			for(Node ce:clist)
 			{
-				if(ce.getId().equals(cname))
+				if(((String)ce.getProperty("id")).equals(cname))
 				{
 					flag=1;
 					//System.out.println("777777777777777"+me.getId());
@@ -506,13 +507,12 @@ class MyASTVisitor extends ASTVisitor{
 		List<SingleVariableDeclaration> param=node.parameters();
 		for(int i=0;i<param.size();i++)
 		{
-			Set<String> types=new TreeSet<String>();	
-			Collection<ClassElement> ce=model.getCandidateClasses(param.get(i).getType().toString());
-			for(ClassElement c : ce)
+			System.out.println("+++"+param.get(i).getType().toString());
+			Collection<Node> ce=model.getCandidateClassNodes(param.get(i).getType().toString());
+			for(Node c : ce)
 			{
 				if(c!=null)
 				{
-					types.add(c.getId());
 					globaltypes.put(param.get(i).getName().toString(),c);
 					printtypes.put(param.get(i).getType().getStartPosition(),c);
 					printTypesMap.put(param.get(i).getName().toString(), param.get(i).getType().getStartPosition());
@@ -523,17 +523,17 @@ class MyASTVisitor extends ASTVisitor{
 		}
 		if(superclassname!=null)
 		{
-			Collection<ClassElement> ce=model.getCandidateClasses(superclassname);
-			for(ClassElement c : ce)
+			Collection<Node> ce=model.getCandidateClassNodes(superclassname);
+			for(Node c : ce)
 			{
-				Collection<MethodElement> methods=c.getMethods();
-				for(MethodElement me : methods)
+				Collection<Node> methods=model.getMethodNodes(c);
+				for(Node me : methods)
 				{
-					if(me.getExactName().equals(node.getName()))
+					if(((String)me.getProperty("exactName")).equals(node.getName()))
 					{
-						if(c!=null && me!=null && me.getParameters().size()==node.parameters().size())
+						if(c!=null && me!=null && model.getMethodParams(me).size()==node.parameters().size())
 						{
-							printtypes.put(node.getStartPosition(),model.getClassElementForMethod(me.getId()));
+							printtypes.put(node.getStartPosition(),model.getMethodContainer(me));
 							printmethods.put(node.getStartPosition(), me);
 						}	
 					}
@@ -544,17 +544,17 @@ class MyASTVisitor extends ASTVisitor{
 		{
 			for(int i=0;i<interfaces.size();i++)
 			{
-				Collection<ClassElement> ce=model.getCandidateClasses(interfaces.get(i).toString());
-				for(ClassElement c : ce)
+				Collection<Node> ce=model.getCandidateClassNodes(interfaces.get(i).toString());
+				for(Node c : ce)
 				{
-					Collection<MethodElement> methods=c.getMethods();
-					for(MethodElement me : methods)
+					Collection<Node> methods=model.getMethodNodes(c);
+					for(Node me : methods)
 					{
-						if(me.getExactName().equals(node.getName()))
+						if(((String)me.getProperty("exactName")).equals(node.getName()))
 						{
-							if(c!=null && me!=null && me.getParameters().size()==node.parameters().size())
+							if(c!=null && me!=null && model.getMethodParams(me).size()==node.parameters().size())
 							{
-								printtypes.put(node.getStartPosition(),model.getClassElementForMethod(me.getId()));
+								printtypes.put(node.getStartPosition(),model.getMethodContainer(me));
 								printmethods.put(node.getStartPosition(), me);
 							}	
 						}
@@ -567,18 +567,18 @@ class MyASTVisitor extends ASTVisitor{
 
 	public void endVisit(ConstructorInvocation node)
 	{	//System.out.println("constructor:"+classname+"<init>");
-		Collection<ClassElement> celist=model.getCandidateClasses(classname);
-		for(ClassElement ce : celist)
+		Collection<Node> celist=model.getCandidateClassNodes(classname);
+		for(Node ce : celist)
 		{
-			Collection<MethodElement>melist=ce.getMethods();
-			for(MethodElement me:melist)
+			Collection<Node>melist=model.getMethodNodes(ce);
+			for(Node me:melist)
 			{
-			if(me.exactMethodName().equals("<init>") && me.getParameters().size()==node.arguments().size())
+			if(((String)me.getProperty("exactName")).equals("<init>") && model.getMethodParams(me).size()==node.arguments().size())
 			{
 					printmethods.put(node.getStartPosition(), me);
-					printtypes.put(node.getStartPosition(),model.getClassElementForMethod(me.getId()));
-					if(me.getReturnElement()!=null)
-						globalmethods.put(node.toString(), me.getReturnElement().getType());
+					printtypes.put(node.getStartPosition(),model.getMethodContainer(me));
+					if(model.getMethodReturn(me)!=null)
+						globalmethods.put(node.toString(), model.getMethodReturn(me));
 			}
 			}
 		}
@@ -586,18 +586,18 @@ class MyASTVisitor extends ASTVisitor{
 
 	public void endVisit(SuperConstructorInvocation node)
 	{	
-		Collection<ClassElement> celist=model.getCandidateClasses(superclassname);
-		for(ClassElement ce : celist)
+		Collection<Node> celist=model.getCandidateClassNodes(superclassname);
+		for(Node ce : celist)
 		{
-			Collection<MethodElement>melist=ce.getMethods();
-			for(MethodElement me:melist)
+			Collection<Node>melist=model.getMethodNodes(ce);
+			for(Node me:melist)
 			{
-				if(me.exactMethodName().equals("<init>") && me.getParameters().size()==node.arguments().size())
+				if(((String)me.getProperty("exactName")).equals("<init>") && model.getMethodParams(me).size()==node.arguments().size())
 				{
 					printmethods.put(node.getStartPosition(),me);
-					printtypes.put(node.getStartPosition(), model.getClassElementForMethod(me.getId()));
-					if(me.getReturnElement()!=null)
-						globalmethods.put(node.toString(), me.getReturnElement().getType());
+					printtypes.put(node.getStartPosition(), model.getMethodContainer(me));
+					if(model.getMethodReturn(me)!=null)
+						globalmethods.put(node.toString(),model.getMethodReturn(me));
 				}	
 			}
 		}
@@ -605,20 +605,20 @@ class MyASTVisitor extends ASTVisitor{
 
 	public void endVisit(SuperMethodInvocation node)
 	{
-		Collection<ClassElement> celist=model.getCandidateClasses(superclassname);
-		Set<MethodElement> methods=new TreeSet<MethodElement>();
-		Set<MethodElement> tempmethods1=new TreeSet<MethodElement>();
-		Set<MethodElement> tempmethods2=new TreeSet<MethodElement>();
-		Set <ClassElement> clist= new HashSet<ClassElement>();
+		Collection<Node> celist=model.getCandidateClassNodes(superclassname);
+		Set<Node> methods=new TreeSet<Node>();
+		Set<Node> tempmethods1=new TreeSet<Node>();
+		Set<Node> tempmethods2=new TreeSet<Node>();
+		Set <Node> clist= new HashSet<Node>();
 		printMethodsMap.put(node.toString(),node.getStartPosition());
-		for(ClassElement ce : celist)
+		for(Node ce : celist)
 		{
-			Collection<MethodElement> melist=ce.getMethods();
-			for(MethodElement me : melist)
+			Collection<Node> melist=model.getMethodNodes(ce);
+			for(Node me : melist)
 			{
-				if(node.getName().toString().equals(me.getExactName()) && me.getParameters().size()==node.arguments().size())
+				if(node.getName().toString().equals((String)me.getProperty("exactName")) && model.getMethodParams(me).size()==node.arguments().size())
 				{
-						if(model.getClassElementForMethod(me.getId()).getId().equals(ce.getId()))
+						if(((String)model.getMethodContainer(me).getProperty("id")).equals((String)ce.getProperty("id")))
 						{
 							tempmethods1.add(me);
 							//System.out.println("3:"+me.getId()+":"+c.getId());
@@ -638,14 +638,14 @@ class MyASTVisitor extends ASTVisitor{
 			{
 				methods=tempmethods2;
 			}
-			for(MethodElement me : methods)
+			for(Node me : methods)
 			{
-				ClassElement fcname=model.getClassElementForMethod(me.getId());
+				Node fcname=model.getMethodContainer(me);
 				if(fcname!=null)
 					clist.add(fcname);
 				printmethods.put(node.getName().getStartPosition(), me);
-				if(me.getReturnElement().toString()!=null)
-					globalmethods.put(node.toString(),me.getReturnElement().getType());
+				if(model.getMethodReturn(me)!=null)
+					globalmethods.put(node.toString(),model.getMethodReturn(me));
 			}
 			if(clist.isEmpty()==false)
 			{
@@ -660,16 +660,16 @@ class MyASTVisitor extends ASTVisitor{
 		if(tempmethods1.isEmpty() && tempmethods2.isEmpty())
 		{
 			//System.out.println("yoyo");
-			Collection<MethodElement> melist=model.getCandidateMethods(node.getName().toString());
+			Collection<Node> melist=model.getCandidateMethodNodes(node.getName().toString());
 			int argsize=node.arguments().size();
-			for(MethodElement me : melist)
+			for(Node me : melist)
 			{
-				if(me.getParameters().size()==argsize)
+				if(model.getMethodParams(me).size()==argsize)
 				{
 					printmethods.put(node.getName().getStartPosition(), me);
-					printtypes.put(node.getName().getStartPosition(),model.getClassElementForMethod(me.getId()));
-					if(me.getReturnElement().getType()!=null)
-						globalmethods.put(node.toString(), me.getReturnElement().getType());
+					printtypes.put(node.getName().getStartPosition(),model.getMethodContainer(me));
+					if(model.getMethodReturn(me)!=null)
+						globalmethods.put(node.toString(), model.getMethodReturn(me));
 				}
 			}
 		}
@@ -684,16 +684,16 @@ class MyASTVisitor extends ASTVisitor{
 				public boolean visit(MethodDeclaration md)
 				{
 					//System.out.println("anon:");
-					Collection<ClassElement> celist=model.getCandidateClasses(node.getType().toString());
-					for(ClassElement ce : celist)
+					Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
+					for(Node ce : celist)
 					{
-						Collection<MethodElement>melist=ce.getMethods();
-						for(MethodElement me:melist)
+						Collection<Node>melist=model.getMethodNodes(ce);
+						for(Node me:melist)
 						{
-						if(me.exactMethodName().equals(md.getName().toString()) && md.parameters().size()==me.getParameters().size())
+						if(((String)me.getProperty("exactName")).equals(md.getName().toString()) && md.parameters().size()==model.getMethodParams(me).size())
 						{
 								printmethods.put(md.getStartPosition(),me);
-								printtypes.put(md.getStartPosition(), model.getClassElementForMethod(me.getId()));
+								printtypes.put(md.getStartPosition(), model.getMethodContainer(me));
 						}
 						}
 					}
@@ -703,13 +703,13 @@ class MyASTVisitor extends ASTVisitor{
 		}
 		else
 		{
-			Collection<ClassElement> celist=model.getCandidateClasses(node.getType().toString());
-			for(ClassElement ce:celist)
+			Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
+			for(Node ce:celist)
 			{
-				Collection<MethodElement> melist=ce.getMethods();
-				for(MethodElement me:melist)
+				Collection<Node> melist=model.getMethodNodes(ce);
+				for(Node me:melist)
 				{
-					if(me.exactMethodName().equals("<init>") && me.getParameters().size()==node.arguments().size())
+					if(((String)me.getProperty("exactName")).equals("<init>") && model.getMethodParams(me).size()==node.arguments().size())
 					{
 						//System.out.println("##########"+node.getParent().getParent().getStartPosition()+node.getType().getStartPosition());
 						printmethods.put(node.getType().getStartPosition(),me);
@@ -726,8 +726,8 @@ class MyASTVisitor extends ASTVisitor{
 	public void endVisit(ClassInstanceCreation node)
 	{	
 		//System.out.println(node.getType().toString()+"0000"+node.toString()+"0000"+node.getParent().getParent());
-		Collection<ClassElement> ce=model.getCandidateClasses(node.getType().toString());
-		for(ClassElement c : ce)
+		Collection<Node> ce=model.getCandidateClassNodes(node.getType().toString());
+		for(Node c : ce)
 		{
 			if(c!=null){
 				//globaltypes.put(node.toString(), c);
@@ -740,8 +740,8 @@ class MyASTVisitor extends ASTVisitor{
 	
 	public boolean visit(CastExpression node)
 	{
-		Collection<ClassElement> ce=model.getCandidateClasses(node.getType().toString());
-		for(ClassElement c : ce)
+		Collection<Node> ce=model.getCandidateClassNodes(node.getType().toString());
+		for(Node c : ce)
 		{
 			if(c!=null){
 				globaltypes.put(node.toString(), c);
@@ -767,10 +767,10 @@ class MyASTVisitor extends ASTVisitor{
 			else
 			{	
 				int flag=0;
-				Set<ClassElement> temp=new HashSet<ClassElement>();
-				for(ClassElement ce:globaltypes.get(lhs))
+				Set<Node> temp=new HashSet<Node>();
+				for(Node ce:globaltypes.get(lhs))
 				{
-					if(ce.getId().equals(globalmethods.get(rhs)))
+					if(((String)ce.getProperty("id")).equals(globalmethods.get(rhs)))
 					{
 						flag=1;
 						temp.add(ce);
@@ -802,12 +802,12 @@ class MyASTVisitor extends ASTVisitor{
 			int flag=0;
 			String cname=null;
 			List<String> namelist = new ArrayList<String>();
-			for(ClassElement type_name:printtypes.get(key))
+			for(Node type_name:printtypes.get(key))
 			{
 				int isprimitive=0;
 				for(String primitive_type : primitive)
 				{
-					if(type_name.getId().equals(primitive_type)==true)
+					if(((String)type_name.getProperty("id")).equals(primitive_type)==true)
 					{
 						isprimitive=1;
 						break;
@@ -815,10 +815,10 @@ class MyASTVisitor extends ASTVisitor{
 				}
 				if(isprimitive==0)
 				{
-					namelist.add("\""+type_name+"\"");
+					namelist.add("\""+type_name.getProperty("id")+"\"");
 					if(flag==0)
 					{
-						cname=type_name.getExactName();
+						cname=(String) type_name.getProperty("exactName");
 						flag=1;
 					}
 				}
@@ -841,10 +841,10 @@ class MyASTVisitor extends ASTVisitor{
 		{
 			List<String> namelist = new ArrayList<String>();
 			String mname=null;
-			for(MethodElement method_name:printmethods.get(key))
+			for(Node method_name:printmethods.get(key))
 			{
-				namelist.add("\""+method_name+"\"");
-				mname=method_name.getExactName();
+				namelist.add("\""+method_name.getProperty("id")+"\"");
+				mname=(String) method_name.getProperty("exactName");
 			}
 			if(namelist.isEmpty()==false)
 			{
@@ -867,19 +867,18 @@ class MyASTVisitor extends ASTVisitor{
 		{
 			System.out.println(main_json.toString(3));
 		}
-		//printFields();
 	}
 	
 	public void checkForNull()
 	{
 		for(Integer key : printtypes.keySet())
-			for(ClassElement type_name:printtypes.get(key))
+			for(Node type_name:printtypes.get(key))
 			{
 				if(type_name==null)
 					printtypes.remove(key, type_name);
 			}
 		for(Integer key : printmethods.keySet())
-			for(MethodElement method_name:printmethods.get(key))
+			for(Node method_name:printmethods.get(key))
 			{
 				if(method_name==null)
 					printmethods.remove(key, method_name);

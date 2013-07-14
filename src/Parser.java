@@ -21,10 +21,11 @@ class Parser{
  * 			1 => has a method wrapper but no class
  * 			2 => missing both method and class wrapper (just a bunch of statements) 
  */
-	Parser(String input, String oracle) throws IOException {
+	public Parser(String input, String oracle) throws IOException {
 		String path = getPath();
 		this.input_snippet = path + File.separator + input;
-		this.input_oracle = path + File.separator + oracle;
+		//this.input_oracle = path + File.separator + oracle;
+		this.input_oracle=oracle;
 	}
 
 	private String getPath() throws IOException {
@@ -44,6 +45,13 @@ class Parser{
 		Model knownModel = xmlrdf.read();
 		ImpreciseModel model = new ImpreciseModel(knownModel);
 		return model;
+	}
+	
+	public GraphDatabase getGraph()
+	{
+		GraphDatabase graphDb = new GraphDatabase(input_oracle);
+		return graphDb;
+		
 	}
 	
 	private ASTParser getASTParser(String sourceCode) {
@@ -76,6 +84,7 @@ class Parser{
 		String code = getCodefromSnippet();
 		ASTParser parser = getASTParser(code);
 		ASTNode cu = (CompilationUnit) parser.createAST(null);
+		//System.out.println(cu);
 		cutype = 0;
 		if (((CompilationUnit) cu).types().isEmpty()) {
 			flag = 1;
