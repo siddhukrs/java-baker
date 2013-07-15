@@ -23,6 +23,8 @@ class Main
 		
 		cu.accept(visitor);
 		visitor.printJson();
+		
 		//visitor.printFields();
 	}
 }
+//awk '{printf "%d\t%s\n", NR, $0}' < sample.txt >> print.txt

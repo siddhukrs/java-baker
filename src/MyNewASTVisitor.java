@@ -231,7 +231,7 @@ class MyNewASTVisitor extends ASTVisitor{
 			if(clist.isEmpty()==false)
 			{
 					globaltypes.replaceValues(e.toString(),clist);
-					//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
+					System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
 					printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
 					//change affected types of e.toString() too
 					//System.out.println("1&&&"+clist);
@@ -875,7 +875,7 @@ class MyNewASTVisitor extends ASTVisitor{
 		{
 			System.out.println(main_json.toString(3));
 		}
-		//printFields();
+		printFields();
 	}
 	
 	public void checkForNull()
