@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -427,22 +429,25 @@ class MyNewASTVisitor extends ASTVisitor{
 
 	private boolean matchParams(Node me, List<ASTNode> params) 
 	{
-		Collection<Collection<String>> nodeArgs = new HashSet<Collection<String>>();
+		ArrayList<HashSet<String>> nodeArgs = new ArrayList<HashSet<String>>();
 		if(params.size()==0)
 		{
 			return true;
 		}
-		Collection<Node>graphNodes = model.getMethodParams(me);
-		if(params.size()!=graphNodes.size())
-		{
-			System.out.println("~~~"+me.getProperty("id"));
-			return false;
-		}
-		System.out.println("**************************");
+		TreeSet<Node>graphNodes = new TreeSet<Node>(new Comparator<Node>(){
+					public int compare(Node a, Node b)
+					{
+						return (Integer)a.getProperty("paramIndex")-(Integer)b.getProperty("paramIndex");
+					}
+				});
+		graphNodes = model.getMethodParams(me);
+		System.out.println("**************************" + params.size() + graphNodes.size());
+		int i=0;
 		for(ASTNode param : params)
 		{
-			System.out.println("---"+param.toString());
-			Collection<String> possibleTypes = new TreeSet<String>();
+			
+			System.out.println("---"+param.toString()+" : "+i++);
+			HashSet<String> possibleTypes = new HashSet<String>();
 			System.out.println("^^^"+param.getNodeType());
 			if(param.getNodeType()==34)
 			{
@@ -529,27 +534,37 @@ class MyNewASTVisitor extends ASTVisitor{
 			}
 			nodeArgs.add(possibleTypes);
 		}
+		System.out.println("**************************" + nodeArgs.size() + graphNodes.size());
 		Iterator<Node> iter1 = graphNodes.iterator();
-		Iterator<Collection<String>> iter2 = nodeArgs.iterator();
+		Iterator<HashSet<String>> iter2 = nodeArgs.iterator();
 		while(iter1.hasNext())
 		{
 			Node graphParam = iter1.next();
-			Collection<String> args = iter2.next();
-			//HashSet<String> childList = model.getClassChildernNodes(graphParam);
-			//HashSet<String> temp = new HashSet<String>(childList);
-			//temp.retainAll(args);
+			HashSet<String> args = iter2.next();
+			int flag=0;
 			for(String arg : args)
 			{
-				System.out.println("+++++++++++++"+graphParam.getProperty("id")+" : "+graphParam.getProperty("exactName")+" : "+arg);
+				System.out.println("+++++++++++++"+graphParam.getProperty("id")+" : "+graphParam.getProperty("paramIndex")+" : "+graphParam.getProperty("exactName")+" : "+arg);
+				if(graphParam.getProperty("exactName").equals(arg)== true || graphParam.getProperty("id").equals(arg)==true)
+				{
+					flag=0;
+					break;
+				}
+				else if(arg.equals("UNKNOWN"))
+				{
+					flag=0;
+					break;
+				}
+				else if(model.checkIfParentNode(graphParam, arg))
+				{
+					flag=0;
+					break;
+				}
+				else
+					flag=1;
 			}
-			if(args.contains("UNKNOWN")==true)
-			{
-				//
-			}
-			else if(args.contains(graphParam.getProperty("exactName"))==false && args.contains(graphParam.getProperty("id"))==false)
-			{
+			if(flag==1)
 				return false;
-			}
 		}
 		System.out.println("MATCH : "+me.getProperty("id"));
 		return true;
@@ -826,7 +841,7 @@ class MyNewASTVisitor extends ASTVisitor{
 
 	public void endVisit(ClassInstanceCreation node)
 	{	
-		System.out.println(node.getType().toString()+"0000"+node.toString()+"0000"+node.getParent().getParent());
+		//System.out.println(node.getType().toString()+"0000"+node.toString()+"0000"+node.getParent().getParent());
 		Collection<Node> ce=model.getCandidateClassNodes(node.getType().toString());
 		for(Node c : ce)
 		{
