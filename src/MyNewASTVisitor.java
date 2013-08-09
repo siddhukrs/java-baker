@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,13 +35,15 @@ import org.json.JSONObject;
 import org.neo4j.graphdb.Node;
 
 
-class MyNewASTVisitor extends ASTVisitor{
+class MyNewASTVisitor extends ASTVisitor
+{
 
 	private GraphDatabase model;
 	private CompilationUnit cu;
 	private int cutype;
 	private HashMultimap<String, Node> globalmethods=HashMultimap.create();//holds method return types for chains
 	private HashMultimap<String, Node> globaltypes=HashMultimap.create();//holds variables, fields and method param types
+	private HashMap<String, HashMultimap<ArrayList<Integer>,Node>> globaltypes2=new HashMap<String, HashMultimap<ArrayList<Integer>,Node>>();//holds variables, fields and method param types
 	private HashMultimap<Integer, Node> printtypes=HashMultimap.create();//holds node start loc and possible types
 	private HashMultimap<Integer, Node> printmethods=HashMultimap.create();//holds node start posns and possible methods they can be
 	private HashMap<String, Integer> printTypesMap=new HashMap<String, Integer>();//maps node start loc to variable names
@@ -93,55 +94,72 @@ class MyNewASTVisitor extends ASTVisitor{
 
 	public void endVisit(VariableDeclarationStatement node)
 	{
-		//System.out.println("visiting");
 		for(int j=0;j<node.fragments().size();j++)
 		{
-			System.out.println(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString() + " : "+getScopeArray(node).toString() + "$$$$$");
-			//System.out.println(node.getType().toString());
+			//System.out.println(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString() + " : "+getScopeArray(node).toString() + "$$$$$");
+			ArrayList<Integer> scopeArray = getScopeArray(node);
+			HashMultimap<ArrayList<Integer>, Node> temp = null;
+			if(globaltypes2.containsKey(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString()))
+			{
+				temp = globaltypes2.get(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString());
+			}
+			else
+			{
+				temp = HashMultimap.create();
+			}
 			Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
 			for(Node ce : celist)
 			{
-				//System.out.println(ce.getProperty("id"));
 				if(ce!=null)
 				{
-					globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), ce);
+					temp.put(scopeArray, ce);
+					//globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), ce);
 					printtypes.put(node.getType().getStartPosition(), ce);
 					printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
 				}
 			}
+			globaltypes2.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), temp);
 		}
 	}
 
 	public void endVisit(FieldDeclaration node) 
 	{
 		for(int j=0;j<node.fragments().size();j++)
-		{	
-			System.out.println(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString()+ ": " + getScopeArray(node) + "-----");
+		{
+			//System.out.println(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString()+ ": " + getScopeArray(node) + "-----");
+			HashMultimap<ArrayList<Integer>, Node> temp = null;
+			ArrayList<Integer> scopeArray = getScopeArray(node);
+			if(globaltypes2.containsKey(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString()))
+			{
+				temp = globaltypes2.get(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString());
+			}
+			else
+			{
+				temp = HashMultimap.create();
+			}
 			if(node.getType().getNodeType()==74)
-			{	Collection<Node> celist=model.getCandidateClassNodes(((ParameterizedType)node.getType()).getType().toString());
+			{
+				Collection<Node> celist=model.getCandidateClassNodes(((ParameterizedType)node.getType()).getType().toString());
 				for(Node ce : celist)
 				{
-					if(ce!=null)
-					{
-						globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(),ce);
+						temp.put(scopeArray, ce);
+						//globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(),ce);
 						printtypes.put(node.getType().getStartPosition(), ce);
 						printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
-					}
 				}
 			}
 			else
-			{	
+			{
 				Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
 				for(Node ce : celist)
 				{
-					if(ce!=null)
-					{
-						globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), ce);
+						temp.put(scopeArray, ce);
+						//globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), ce);
 						printtypes.put(node.getType().getStartPosition(),ce);
 						printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
-					}
 				}
 			}
+			globaltypes2.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), temp);
 		}
 	}
 
@@ -203,14 +221,15 @@ class MyNewASTVisitor extends ASTVisitor{
 		{
 
 		}
-		else if(globaltypes.containsKey(e.toString()))
+		else if(globaltypes2.containsKey(e.toString()))
 		{
-			//System.out.println("###"+node.getName().toString()+"  2.1");
 			System.out.println(e.toString()+" : "+getScopeArray(node));
 			String exactname=null;
 			Set<Node> methods=new HashSet<Node>();
 			Set <Node> clist= new HashSet<Node>();
-			Set <Node> celist=globaltypes.get(e.toString());
+			
+			HashMultimap<ArrayList<Integer>, Node> celist_temp = globaltypes2.get(e.toString());
+			Set<Node> celist = getNodeSet(celist_temp, getScopeArray(node));
 			printMethodsMap.put(node.toString(),node.getStartPosition());
 			affectedTypes.put(printTypesMap.get(e.toString()), node.getExpression().getStartPosition());
 			affectedMethods.put(printTypesMap.get(e.toString()), node.getName().getStartPosition());
@@ -443,6 +462,24 @@ class MyNewASTVisitor extends ASTVisitor{
 		}
 	}
 
+	private Set<Node> getNodeSet(HashMultimap<ArrayList<Integer>, Node> celist2, ArrayList<Integer> scopeArray) 
+	{
+		for(ArrayList<Integer> test : celist2.keySet())
+		{
+			if(isSubset(test, scopeArray))
+				return celist2.get(test);
+		}
+		return null;
+	}
+
+	private boolean isSubset(ArrayList<Integer> test,ArrayList<Integer> scopeArray) 
+	{
+			if(scopeArray.containsAll(test))
+				return true;
+			else
+				return false;
+	}
+
 	private boolean matchParams(Node me, List<ASTNode> params) 
 	{
 		ArrayList<HashSet<String>> nodeArgs = new ArrayList<HashSet<String>>();
@@ -457,7 +494,6 @@ class MyNewASTVisitor extends ASTVisitor{
 			}
 		});
 		graphNodes = model.getMethodParams(me);
-		int i=0;
 		for(ASTNode param : params)
 		{
 
@@ -502,9 +538,11 @@ class MyNewASTVisitor extends ASTVisitor{
 			}
 			else if (param.getNodeType()==42)
 			{
-				if(globaltypes.containsKey(param.toString()))
+				if(globaltypes2.containsKey(param.toString()))
 				{
-					Set<Node> localTypes = globaltypes.get(param.toString());
+					HashMultimap<ArrayList<Integer>, Node> celist_temp = globaltypes2.get(param.toString());
+					Set<Node> localTypes = getNodeSet(celist_temp, getScopeArray(param));
+					//Set<Node> localTypes = globaltypes.get(param.toString());
 					for(Node localType : localTypes)
 					{
 						possibleTypes.add((String) localType.getProperty("id"));
@@ -629,19 +667,25 @@ class MyNewASTVisitor extends ASTVisitor{
 		List<SingleVariableDeclaration> param=node.parameters();
 		for(int i=0;i<param.size();i++)
 		{
-			System.out.println(param.get(i).getType().toString()+" : "+getScopeArray(node));
+			//System.out.println(param.get(i).getType().toString()+" : "+getScopeArray(node));
+			ArrayList<Integer> scopeArray = getScopeArray(node);
+			HashMultimap<ArrayList<Integer>,Node> temp = null;
+			if(globaltypes2.containsKey(param.get(i).getName().toString()))
+			{
+				temp = globaltypes2.get(param.get(i).getName().toString());
+			}
+			else
+			{
+				temp = HashMultimap.create();
+			}
 			Collection<Node> ce=model.getCandidateClassNodes(param.get(i).getType().toString());
 			for(Node c : ce)
 			{
-				if(c!=null)
-				{
-					globaltypes.put(param.get(i).getName().toString(),c);
-					printtypes.put(param.get(i).getType().getStartPosition(),c);
-					printTypesMap.put(param.get(i).getName().toString(), param.get(i).getType().getStartPosition());
-				}
-				if(ce.size()>1){
-				}
+				temp.put(scopeArray, c);
+				printtypes.put(param.get(i).getType().getStartPosition(),c);
+				printTypesMap.put(param.get(i).getName().toString(), param.get(i).getType().getStartPosition());
 			}
+			globaltypes2.put(param.get(i).getName().toString(), temp);
 		}
 		if(superclassname!=null)
 		{
@@ -865,14 +909,36 @@ class MyNewASTVisitor extends ASTVisitor{
 	public boolean visit(CastExpression node)
 	{
 		Collection<Node> ce=model.getCandidateClassNodes(node.getType().toString());
+		HashMultimap<ArrayList<Integer>, Node> temp1= null;
+		HashMultimap<ArrayList<Integer>, Node> temp2= null;
+		ArrayList<Integer> scopeArray = getScopeArray(node);
+		if(globaltypes2.containsKey(node.toString()))
+		{
+			temp1 = globaltypes2.get(node.toString());
+		}
+		else
+		{
+			temp1 = HashMultimap.create();
+		}
+		if(globaltypes2.containsKey("("+node.toString()+")"))
+		{
+			temp2 = globaltypes2.get("("+node.toString()+")");
+		}
+		else
+		{
+			temp2 = HashMultimap.create();
+		}
 		for(Node c : ce)
 		{
-			if(c!=null){
-				globaltypes.put(node.toString(), c);
+			if(c!=null)
+			{
+				temp1.put(scopeArray, c);
 				printtypes.put(node.getType().getStartPosition(), c);
-				globaltypes.put("("+node.toString()+")", c);
+				temp2.put(scopeArray, c);
 			}
 		}
+		globaltypes2.put(node.toString(), temp1);
+		globaltypes2.put("("+node.toString()+")", temp2);
 		return true;
 	}
 
@@ -883,29 +949,40 @@ class MyNewASTVisitor extends ASTVisitor{
 		rhs=node.getRightHandSide().toString();
 		if(globalmethods.containsKey(rhs))
 		{
-			if(!globaltypes.containsKey(lhs))
-			{	
+			if(!globaltypes2.containsKey(lhs))
+			{
 				globalmethods.putAll(lhs, globalmethods.get(rhs));
 				globalmethods.putAll(lhs, globalmethods.get(rhs));
 			}
 			else
 			{	
 				int flag=0;
-				Set<Node> temp=new HashSet<Node>();
-				for(Node ce:globaltypes.get(lhs))
+				//Set<Node> temp=new HashSet<Node>();
+				Set<Node> temp = new HashSet<Node>();
+				HashMultimap<ArrayList<Integer>, Node> celist_temp = globaltypes2.get(lhs);
+				Set<Node> localTypes = getNodeSet(celist_temp, getScopeArray(node));
+				ArrayList<Integer> scopeArray = null;
+				for(ArrayList<Integer> key : celist_temp.keySet())
 				{
-					if(((String)ce.getProperty("id")).equals(globalmethods.get(rhs)))
+					if(localTypes.equals(celist_temp.get(key)))
 					{
-						flag=1;
-						temp.add(ce);
+						scopeArray = key;
+						for(Node ce : localTypes)
+						{
+							if(globalmethods.get(rhs).contains((String)ce.getProperty("id")))
+							{
+								flag=1;
+								temp.add(ce);
+							}
+						}
 					}
 				}
 				if(flag==1)
 				{
 					System.out.println("^^^^^^^^^:"+temp+node.getStartPosition());
-					globaltypes.replaceValues(lhs,temp);
+					globaltypes2.get(lhs).replaceValues(scopeArray,temp);
 				}
-
+				 
 			}
 		}
 
