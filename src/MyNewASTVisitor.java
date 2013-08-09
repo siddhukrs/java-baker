@@ -37,7 +37,7 @@ import org.neo4j.graphdb.Node;
 
 
 class MyNewASTVisitor extends ASTVisitor{
-	
+
 	private GraphDatabase model;
 	private CompilationUnit cu;
 	private int cutype;
@@ -53,9 +53,9 @@ class MyNewASTVisitor extends ASTVisitor{
 	private String classname = null;
 	private String superclassname=null;
 	private ArrayList<Object> interfaces=new ArrayList<Object>();
-	
 
-	
+
+
 	public MyNewASTVisitor(GraphDatabase db, CompilationUnit cu, int cutype) 
 	{
 		this.model=db;
@@ -63,7 +63,7 @@ class MyNewASTVisitor extends ASTVisitor{
 		this.cutype=cutype;
 		//db.test();
 	}
-	
+
 	public void printFields()
 	{
 		System.out.println("globalmethods"+globalmethods);
@@ -75,12 +75,28 @@ class MyNewASTVisitor extends ASTVisitor{
 		System.out.println("affectedTypes"+affectedTypes);
 		System.out.println("affectedMethods"+affectedMethods);
 	}
-	
+
+	private ArrayList<Integer> getScopeArray(ASTNode node)
+	{
+		ASTNode actualNode = node;
+		ASTNode parentNode;
+		ArrayList<Integer> scopeList = new ArrayList<Integer>();
+		while((parentNode =actualNode.getParent())!=null)
+		{
+			//System.out.println(parentNode.getStartPosition());
+			//System.out.println(parentNode.toString());
+			scopeList.add(parentNode.getStartPosition());
+			actualNode = parentNode;
+		}
+		return scopeList;
+	}
+
 	public void endVisit(VariableDeclarationStatement node)
 	{
 		//System.out.println("visiting");
 		for(int j=0;j<node.fragments().size();j++)
 		{
+			System.out.println(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString() + " : "+getScopeArray(node).toString() + "$$$$$");
 			//System.out.println(node.getType().toString());
 			Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
 			for(Node ce : celist)
@@ -95,37 +111,36 @@ class MyNewASTVisitor extends ASTVisitor{
 			}
 		}
 	}
-	
+
 	public void endVisit(FieldDeclaration node) 
 	{
 		for(int j=0;j<node.fragments().size();j++)
 		{	
-			Collection<Node> types=new HashSet<Node>();	
+			System.out.println(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString()+ ": " + getScopeArray(node) + "-----");
 			if(node.getType().getNodeType()==74)
 			{	Collection<Node> celist=model.getCandidateClassNodes(((ParameterizedType)node.getType()).getType().toString());
-			for(Node ce : celist)
-			{
-				if(ce!=null)
+				for(Node ce : celist)
 				{
-					types.add(ce);
-					globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(),ce);
-					printtypes.put(node.getType().getStartPosition(), ce);
-					printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
+					if(ce!=null)
+					{
+						globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(),ce);
+						printtypes.put(node.getType().getStartPosition(), ce);
+						printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
+					}
 				}
-			}
 			}
 			else
 			{	
-			Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
-			for(Node ce : celist)
-			{
-				if(ce!=null){
-					types.add(ce);
-					globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), ce);
-					printtypes.put(node.getType().getStartPosition(),ce);
-					printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
+				Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
+				for(Node ce : celist)
+				{
+					if(ce!=null)
+					{
+						globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), ce);
+						printtypes.put(node.getType().getStartPosition(),ce);
+						printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
+					}
 				}
-			}
 			}
 		}
 	}
@@ -136,7 +151,7 @@ class MyNewASTVisitor extends ASTVisitor{
 		if(e==null)
 		{
 			if(superclassname!=null)
-			{	System.out.println("###"+node.getName().toString()+"  1.1");
+			{	//System.out.println("###"+node.getName().toString()+"  1.1");
 				/*
 				 * Handles inheritance, where methods from Superclasses can be directly called
 				 */
@@ -164,7 +179,7 @@ class MyNewASTVisitor extends ASTVisitor{
 			}
 			else
 			{
-				System.out.println("###"+node.getName().toString()+"  1.2");
+				//System.out.println("###"+node.getName().toString()+"  1.2");
 				/*
 				 * Might be user declared helper functions or maybe object reference is assumed to be obvious in the snippet
 				 */
@@ -175,10 +190,10 @@ class MyNewASTVisitor extends ASTVisitor{
 					{
 						if(matchParams(me, node.arguments())==true)
 						{
-						printtypes.put(node.getName().getStartPosition(), model.getMethodContainer(me));
-						printmethods.put(node.getName().getStartPosition(), me);
-						if(model.getMethodReturn(me)!=null)
-							globalmethods.put(node.toString(),model.getMethodReturn(me));
+							printtypes.put(node.getName().getStartPosition(), model.getMethodContainer(me));
+							printmethods.put(node.getName().getStartPosition(), me);
+							if(model.getMethodReturn(me)!=null)
+								globalmethods.put(node.toString(),model.getMethodReturn(me));
 						}
 					}
 				}
@@ -186,11 +201,12 @@ class MyNewASTVisitor extends ASTVisitor{
 		}
 		else if(e.toString().contains("System."))
 		{
-			
+
 		}
 		else if(globaltypes.containsKey(e.toString()))
 		{
-			System.out.println("###"+node.getName().toString()+"  2.1");
+			//System.out.println("###"+node.getName().toString()+"  2.1");
+			System.out.println(e.toString()+" : "+getScopeArray(node));
 			String exactname=null;
 			Set<Node> methods=new HashSet<Node>();
 			Set <Node> clist= new HashSet<Node>();
@@ -200,58 +216,58 @@ class MyNewASTVisitor extends ASTVisitor{
 			affectedMethods.put(printTypesMap.get(e.toString()), node.getName().getStartPosition());
 			for(Node ce:celist)
 			{
-					exactname=(String) ce.getProperty("exactName");
-					Collection<Node> melist = model.getMethodNodes(ce);
-					for(Node me : melist)
+				exactname=(String) ce.getProperty("exactName");
+				Collection<Node> melist = model.getMethodNodes(ce);
+				for(Node me : melist)
+				{
+					if(((String)me.getProperty("exactName")).equals(node.getName().toString()) && node.arguments().size()==model.getMethodParams(me).size())
 					{
-						if(((String)me.getProperty("exactName")).equals(node.getName().toString()) && node.arguments().size()==model.getMethodParams(me).size())
-						{
-							if(matchParams(me, node.arguments())==true)
-									methods.add(me);
-						}
+						if(matchParams(me, node.arguments())==true)
+							methods.add(me);
 					}
-					for(Node m : methods)
-					{
-							printmethods.put(node.getName().getStartPosition(), m);
-							Node fcname=model.getMethodContainer(m);
-							if(fcname!=null && ((String)fcname.getProperty("exactName")).equals(exactname)==true)
-								clist.add(fcname);
-							if(model.getMethodReturn(m)!=null)
-								globalmethods.put(node.toString(), model.getMethodReturn(m));
-					}
+				}
+				for(Node m : methods)
+				{
+					printmethods.put(node.getName().getStartPosition(), m);
+					Node fcname=model.getMethodContainer(m);
+					if(fcname!=null && ((String)fcname.getProperty("exactName")).equals(exactname)==true)
+						clist.add(fcname);
+					if(model.getMethodReturn(m)!=null)
+						globalmethods.put(node.toString(), model.getMethodReturn(m));
+				}
 			}
 			//clist has the list of class names extracted from the methodname that match the exactname
 			//use that to replace previously assigned values
 			if(clist.isEmpty()==false)
 			{
-					globaltypes.replaceValues(e.toString(),clist);
-					System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
-					printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
-					//change affected types of e.toString() too
-					//System.out.println("1&&&"+clist);
-					for(Integer affectedNode:affectedTypes.get(printTypesMap.get(e.toString())))
-					{
-						printtypes.replaceValues(affectedNode, clist);
-						//System.out.println("0");
-					}
-					
-					for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
-					{
-						Collection<Node>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
-						//System.out.println("1:"+affectedNode);
-							printmethods.replaceValues(affectedNode, temp);
-					}
-					if(printtypes.containsKey(node.getExpression().getStartPosition()))
-						printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
-					else
-						printtypes.putAll(node.getExpression().getStartPosition(), clist);
-					//System.out.println(affectedTypes);
-					
+				globaltypes.replaceValues(e.toString(),clist);
+				//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
+				printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
+				//change affected types of e.toString() too
+				//System.out.println("1&&&"+clist);
+				for(Integer affectedNode:affectedTypes.get(printTypesMap.get(e.toString())))
+				{
+					printtypes.replaceValues(affectedNode, clist);
+					//System.out.println("0");
+				}
+
+				for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
+				{
+					Collection<Node>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
+					//System.out.println("1:"+affectedNode);
+					printmethods.replaceValues(affectedNode, temp);
+				}
+				if(printtypes.containsKey(node.getExpression().getStartPosition()))
+					printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
+				else
+					printtypes.putAll(node.getExpression().getStartPosition(), clist);
+				//System.out.println(affectedTypes);
+
 			}
 		}
 		else if(e.toString().matches("[A-Z][a-zA-Z]*"))
 		{
-			System.out.println("###"+node.getName().toString()+"  3.1");
+			//System.out.println("###"+node.getName().toString()+"  3.1");
 			String exactname="";
 			Set <Node> clist= new HashSet<Node>();
 			printMethodsMap.put(node.toString(),node.getStartPosition());
@@ -276,9 +292,9 @@ class MyNewASTVisitor extends ASTVisitor{
 					}
 				}	
 			}
-			
-			
-			
+
+
+
 			if(clist.isEmpty()==false)
 			{
 				/*
@@ -292,25 +308,25 @@ class MyNewASTVisitor extends ASTVisitor{
 						printtypes.replaceValues(affectedNode, clist);
 						System.out.println("0");
 					}
-					
+
 					for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
 					{
 						Collection<MethodElement>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
 						System.out.println("1:"+affectedNode);
 							printmethods.replaceValues(affectedNode, temp);
 					}
-				*/
+				 */
 				if(printtypes.containsKey(node.getExpression().getStartPosition()))
 					printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
 				else
 					printtypes.putAll(node.getExpression().getStartPosition(), clist);
-					//System.out.println(affectedTypes);
-					
+				//System.out.println(affectedTypes);
+
 			}
 		}
 		else if(globalmethods.containsKey(e.toString()))
 		{
-			System.out.println("###"+node.getName().toString()+"  4.1");
+			//System.out.println("###"+node.getName().toString()+"  4.1");
 			String exactname="";
 			Set<Node> celist=globalmethods.get(e.toString());
 			Set<Node> methods=new HashSet<Node>();
@@ -327,7 +343,7 @@ class MyNewASTVisitor extends ASTVisitor{
 					if(((String)me.getProperty("exactName")).equals(node.getName().toString()) && me!=null && model.getMethodParams(me).size()==node.arguments().size())
 					{	
 						if(matchParams(me, node.arguments())==true)
-								methods.add(me);
+							methods.add(me);
 					}
 				}
 				for(Node m : methods)
@@ -340,38 +356,38 @@ class MyNewASTVisitor extends ASTVisitor{
 						globalmethods.put(node.toString(),model.getMethodReturn(m));
 				}
 			}
-			
+
 			if(clist.isEmpty()==false)
 			{
-					globaltypes.replaceValues(e.toString(),clist);
-					//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
-					//printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
-					//change affected types of e.toString() too
-					System.out.println("1&&&"+clist);
-					for(Integer affectedNode:affectedTypes.get(printTypesMap.get(e.toString())))
-					{
-						printtypes.replaceValues(affectedNode, clist);
-						//System.out.println("0");
-					}
-					
-					for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
-					{
-						Collection<Node>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
-						//System.out.println("1:"+affectedNode);
-							printmethods.replaceValues(affectedNode, temp);
-					}
-					printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
-					//System.out.println(affectedTypes);
+				globaltypes.replaceValues(e.toString(),clist);
+				//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
+				//printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
+				//change affected types of e.toString() too
+				//System.out.println("1&&&"+clist);
+				for(Integer affectedNode:affectedTypes.get(printTypesMap.get(e.toString())))
+				{
+					printtypes.replaceValues(affectedNode, clist);
+					//System.out.println("0");
+				}
+
+				for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
+				{
+					Collection<Node>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
+					//System.out.println("1:"+affectedNode);
+					printmethods.replaceValues(affectedNode, temp);
+				}
+				printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
+				//System.out.println(affectedTypes);
 			}
 		}
 		else
 		{
-			System.out.println("###"+node.getName().toString()+"--"+e.toString()+"  5.1");
+			//System.out.println("###"+node.getName().toString()+"--"+e.toString()+"  5.1");
 			Collection<Node> melist=model.getCandidateMethodNodes(node.getName().toString());
 			Set<Node> methods=new HashSet<Node>();
 			Set <Node> clist= new HashSet<Node>();
 			printMethodsMap.put(node.toString(),node.getStartPosition());
-			
+
 			for(Node me : melist)
 			{
 				if(model.getMethodParams(me).size()==node.arguments().size())
@@ -380,7 +396,7 @@ class MyNewASTVisitor extends ASTVisitor{
 						methods.add(me);
 				}
 			}
-			
+
 			for(Node m : methods)
 			{
 				//System.out.println(m.getProperty("id"));
@@ -402,27 +418,27 @@ class MyNewASTVisitor extends ASTVisitor{
 				{
 					printTypesMap.put(e.toString(), e.getStartPosition());
 				}
-					//System.out.println("!!!:"+node.getExpression().getStartPosition());
-					affectedTypes.put(printTypesMap.get(e.toString()), node.getExpression().getStartPosition());
-					affectedMethods.put(printTypesMap.get(e.toString()), node.getName().getStartPosition());
-					//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
-					//printtypes.putAll(printTypesMap.get(e.toString()), clist);
-					//change affected types of e.toString() too
-					//System.out.println("1&&&"+clist);
-					for(Integer affectedNode:affectedTypes.get(printTypesMap.get(e.toString())))
-					{
-						printtypes.replaceValues(affectedNode, clist);
-						//System.out.println("0");
-					}
-					
-					for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
-					{
-						Collection<Node>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
-						//System.out.println("1:"+affectedNode);
-							printmethods.replaceValues(affectedNode, temp);
-					}
-					printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
-					//System.out.println(affectedTypes);
+				//System.out.println("!!!:"+node.getExpression().getStartPosition());
+				affectedTypes.put(printTypesMap.get(e.toString()), node.getExpression().getStartPosition());
+				affectedMethods.put(printTypesMap.get(e.toString()), node.getName().getStartPosition());
+				//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
+				//printtypes.putAll(printTypesMap.get(e.toString()), clist);
+				//change affected types of e.toString() too
+				//System.out.println("1&&&"+clist);
+				for(Integer affectedNode:affectedTypes.get(printTypesMap.get(e.toString())))
+				{
+					printtypes.replaceValues(affectedNode, clist);
+					//System.out.println("0");
+				}
+
+				for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
+				{
+					Collection<Node>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
+					//System.out.println("1:"+affectedNode);
+					printmethods.replaceValues(affectedNode, temp);
+				}
+				printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
+				//System.out.println(affectedTypes);
 			}
 		}
 	}
@@ -435,16 +451,16 @@ class MyNewASTVisitor extends ASTVisitor{
 			return true;
 		}
 		TreeSet<Node>graphNodes = new TreeSet<Node>(new Comparator<Node>(){
-					public int compare(Node a, Node b)
-					{
-						return (Integer)a.getProperty("paramIndex")-(Integer)b.getProperty("paramIndex");
-					}
-				});
+			public int compare(Node a, Node b)
+			{
+				return (Integer)a.getProperty("paramIndex")-(Integer)b.getProperty("paramIndex");
+			}
+		});
 		graphNodes = model.getMethodParams(me);
 		int i=0;
 		for(ASTNode param : params)
 		{
-			
+
 			HashSet<String> possibleTypes = new HashSet<String>();
 			if(param.getNodeType()==34)
 			{
@@ -520,7 +536,7 @@ class MyNewASTVisitor extends ASTVisitor{
 			{
 				ClassInstanceCreation tempNode = (ClassInstanceCreation) param;
 				possibleTypes.add(tempNode.getType().toString());
-				System.out.println("14:  "+tempNode.getType().toString());
+				//System.out.println("14:  "+tempNode.getType().toString());
 			}
 			else
 			{
@@ -558,7 +574,7 @@ class MyNewASTVisitor extends ASTVisitor{
 			if(flag==1)
 				return false;
 		}
-		System.out.println("MATCH : "+me.getProperty("id"));
+		//System.out.println("MATCH : "+me.getProperty("id"));
 		return true;
 	}
 
@@ -613,7 +629,7 @@ class MyNewASTVisitor extends ASTVisitor{
 		List<SingleVariableDeclaration> param=node.parameters();
 		for(int i=0;i<param.size();i++)
 		{
-			//System.out.println("+++"+param.get(i).getType().toString());
+			System.out.println(param.get(i).getType().toString()+" : "+getScopeArray(node));
 			Collection<Node> ce=model.getCandidateClassNodes(param.get(i).getType().toString());
 			for(Node c : ce)
 			{
@@ -672,23 +688,23 @@ class MyNewASTVisitor extends ASTVisitor{
 	}
 
 	public void endVisit(ConstructorInvocation node)
-	{	System.out.println("constructor:"+classname+"<init>");
+	{	//System.out.println("constructor:"+classname+"<init>");
 		Collection<Node> celist=model.getCandidateClassNodes(classname);
 		for(Node ce : celist)
 		{
 			Collection<Node>melist=model.getMethodNodes(ce);
 			for(Node me:melist)
 			{
-			if(((String)me.getProperty("exactName")).equals("<init>") && model.getMethodParams(me).size()==node.arguments().size())
-			{
-				if(matchParams(me, node.arguments())==true)
+				if(((String)me.getProperty("exactName")).equals("<init>") && model.getMethodParams(me).size()==node.arguments().size())
 				{
-					printmethods.put(node.getStartPosition(), me);
-					printtypes.put(node.getStartPosition(),model.getMethodContainer(me));
-					if(model.getMethodReturn(me)!=null)
-						globalmethods.put(node.toString(), model.getMethodReturn(me));
+					if(matchParams(me, node.arguments())==true)
+					{
+						printmethods.put(node.getStartPosition(), me);
+						printtypes.put(node.getStartPosition(),model.getMethodContainer(me));
+						if(model.getMethodReturn(me)!=null)
+							globalmethods.put(node.toString(), model.getMethodReturn(me));
+					}
 				}
-			}
 			}
 		}
 	}
@@ -734,7 +750,7 @@ class MyNewASTVisitor extends ASTVisitor{
 					{
 						methods.add(me);
 					}
-							//System.out.println("4:"+me.getId()+":"+c.getId());
+					//System.out.println("4:"+me.getId()+":"+c.getId());
 				}
 			}
 			for(Node me : methods)
@@ -748,12 +764,12 @@ class MyNewASTVisitor extends ASTVisitor{
 			}
 			if(clist.isEmpty()==false)
 			{
-					//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
-					//printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
-					//change affected types of e.toString() too
-					//System.out.println("1&&&"+clist);
-					printtypes.replaceValues(node.getStartPosition(), clist);
-					//System.out.println(affectedTypes);
+				//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
+				//printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
+				//change affected types of e.toString() too
+				//System.out.println("1&&&"+clist);
+				printtypes.replaceValues(node.getStartPosition(), clist);
+				//System.out.println(affectedTypes);
 			}
 		}
 		if(tempmethods1.isEmpty() && tempmethods2.isEmpty())
@@ -791,7 +807,7 @@ class MyNewASTVisitor extends ASTVisitor{
 						Collection<Node>melist=model.getMethodNodes(ce);
 						for(Node me:melist)
 						{
-							
+
 							if(((String)me.getProperty("exactName")).equals(md.getName().toString()) && md.parameters().size()==model.getMethodParams(me).size())
 							{
 								if(matchParams(me, md.parameters())==true)
@@ -845,7 +861,7 @@ class MyNewASTVisitor extends ASTVisitor{
 			}
 		}
 	}
-	
+
 	public boolean visit(CastExpression node)
 	{
 		Collection<Node> ce=model.getCandidateClassNodes(node.getType().toString());
@@ -889,10 +905,10 @@ class MyNewASTVisitor extends ASTVisitor{
 					System.out.println("^^^^^^^^^:"+temp+node.getStartPosition());
 					globaltypes.replaceValues(lhs,temp);
 				}
-				
+
 			}
 		}
-		
+
 		return true;
 	}
 
@@ -977,7 +993,7 @@ class MyNewASTVisitor extends ASTVisitor{
 		}
 		printFields();
 	}
-	
+
 	public void checkForNull()
 	{
 		for(Integer key : printtypes.keySet())
@@ -993,6 +1009,6 @@ class MyNewASTVisitor extends ASTVisitor{
 					printmethods.remove(key, method_name);
 			}
 	}
-	
-	
+
+
 }
