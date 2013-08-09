@@ -184,10 +184,10 @@ class MyNewASTVisitor extends ASTVisitor{
 				}
 			}
 		}
-		/*else if(e.toString().contains("System."))
+		else if(e.toString().contains("System."))
 		{
 			
-		}*/
+		}
 		else if(globaltypes.containsKey(e.toString()))
 		{
 			System.out.println("###"+node.getName().toString()+"  2.1");
@@ -253,7 +253,6 @@ class MyNewASTVisitor extends ASTVisitor{
 		{
 			System.out.println("###"+node.getName().toString()+"  3.1");
 			String exactname="";
-			Set<Node> methods=new HashSet<Node>();
 			Set <Node> clist= new HashSet<Node>();
 			printMethodsMap.put(node.toString(),node.getStartPosition());
 			affectedTypes.put(printTypesMap.get(e.toString()), node.getExpression().getStartPosition());
@@ -268,16 +267,14 @@ class MyNewASTVisitor extends ASTVisitor{
 					if(((String)me.getProperty("exactName")).equals(node.getName().toString()) && me!=null && model.getMethodParams(me).size()==node.arguments().size())
 					{
 						if(matchParams(me, node.arguments())==true)
-								methods.add(me);
+						{
+							printmethods.put(node.getName().getStartPosition(), me);
+							clist.add(ce);
+							if(model.getMethodReturn(me)!=null)
+								globalmethods.put(node.toString(),model.getMethodReturn(me));
+						}
 					}
 				}	
-				for(Node m : methods)
-				{
-					printmethods.put(node.getName().getStartPosition(), m);
-					clist.add(ce);
-					if(model.getMethodReturn(m)!=null)
-						globalmethods.put(node.toString(),model.getMethodReturn(m));
-				}
 			}
 			
 			
@@ -303,7 +300,10 @@ class MyNewASTVisitor extends ASTVisitor{
 							printmethods.replaceValues(affectedNode, temp);
 					}
 				*/
+				if(printtypes.containsKey(node.getExpression().getStartPosition()))
 					printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
+				else
+					printtypes.putAll(node.getExpression().getStartPosition(), clist);
 					//System.out.println(affectedTypes);
 					
 			}
@@ -441,14 +441,11 @@ class MyNewASTVisitor extends ASTVisitor{
 					}
 				});
 		graphNodes = model.getMethodParams(me);
-		System.out.println("**************************" + params.size() + graphNodes.size());
 		int i=0;
 		for(ASTNode param : params)
 		{
 			
-			System.out.println("---"+param.toString()+" : "+i++);
 			HashSet<String> possibleTypes = new HashSet<String>();
-			System.out.println("^^^"+param.getNodeType());
 			if(param.getNodeType()==34)
 			{
 				possibleTypes.add("int");
@@ -494,7 +491,6 @@ class MyNewASTVisitor extends ASTVisitor{
 					Set<Node> localTypes = globaltypes.get(param.toString());
 					for(Node localType : localTypes)
 					{
-						System.out.println("^^^^"+localType.getProperty("id"));
 						possibleTypes.add((String) localType.getProperty("id"));
 					}
 				}
@@ -511,7 +507,6 @@ class MyNewASTVisitor extends ASTVisitor{
 					Set<Node> localTypes = globalmethods.get(param.toString());
 					for(Node localType : localTypes)
 					{
-						System.out.println("@@@@"+localType.getProperty("id"));
 						possibleTypes.add((String) localType.getProperty("id"));
 					}
 				}
@@ -529,12 +524,10 @@ class MyNewASTVisitor extends ASTVisitor{
 			}
 			else
 			{
-				System.out.println("%%%"+param.getNodeType());
 				possibleTypes.add("UNKNOWN");
 			}
 			nodeArgs.add(possibleTypes);
 		}
-		System.out.println("**************************" + nodeArgs.size() + graphNodes.size());
 		Iterator<Node> iter1 = graphNodes.iterator();
 		Iterator<HashSet<String>> iter2 = nodeArgs.iterator();
 		while(iter1.hasNext())
@@ -544,7 +537,6 @@ class MyNewASTVisitor extends ASTVisitor{
 			int flag=0;
 			for(String arg : args)
 			{
-				System.out.println("+++++++++++++"+graphParam.getProperty("id")+" : "+graphParam.getProperty("paramIndex")+" : "+graphParam.getProperty("exactName")+" : "+arg);
 				if(graphParam.getProperty("exactName").equals(arg)== true || graphParam.getProperty("id").equals(arg)==true)
 				{
 					flag=0;
