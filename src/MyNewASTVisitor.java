@@ -42,7 +42,7 @@ class MyNewASTVisitor extends ASTVisitor
 	private CompilationUnit cu;
 	private int cutype;
 	private HashMultimap<String, Node> globalmethods=HashMultimap.create();//holds method return types for chains
-	private HashMultimap<String, Node> globaltypes=HashMultimap.create();//holds variables, fields and method param types
+	//private HashMultimap<String, Node> globaltypes=HashMultimap.create();//holds variables, fields and method param types
 	private HashMap<String, HashMultimap<ArrayList<Integer>,Node>> globaltypes2=new HashMap<String, HashMultimap<ArrayList<Integer>,Node>>();//holds variables, fields and method param types
 	private HashMultimap<Integer, Node> printtypes=HashMultimap.create();//holds node start loc and possible types
 	private HashMultimap<Integer, Node> printmethods=HashMultimap.create();//holds node start posns and possible methods they can be
@@ -68,7 +68,7 @@ class MyNewASTVisitor extends ASTVisitor
 	public void printFields()
 	{
 		System.out.println("globalmethods"+globalmethods);
-		System.out.println("globaltypes"+globaltypes);
+		System.out.println("globaltypes"+globaltypes2);
 		System.out.println("printtypes"+printtypes);
 		System.out.println("printmethods"+printmethods);
 		System.out.println("printTypesMap"+printTypesMap);
@@ -84,8 +84,6 @@ class MyNewASTVisitor extends ASTVisitor
 		ArrayList<Integer> scopeList = new ArrayList<Integer>();
 		while((parentNode =actualNode.getParent())!=null)
 		{
-			//System.out.println(parentNode.getStartPosition());
-			//System.out.println(parentNode.toString());
 			scopeList.add(parentNode.getStartPosition());
 			actualNode = parentNode;
 		}
@@ -229,7 +227,10 @@ class MyNewASTVisitor extends ASTVisitor
 			Set <Node> clist= new HashSet<Node>();
 			
 			HashMultimap<ArrayList<Integer>, Node> celist_temp = globaltypes2.get(e.toString());
-			Set<Node> celist = getNodeSet(celist_temp, getScopeArray(node));
+			ArrayList<Integer> scopeArray = getNodeSet(celist_temp, getScopeArray(node));
+			if(scopeArray == null)
+					return;
+			Set<Node> celist = celist_temp.get(scopeArray);
 			printMethodsMap.put(node.toString(),node.getStartPosition());
 			affectedTypes.put(printTypesMap.get(e.toString()), node.getExpression().getStartPosition());
 			affectedMethods.put(printTypesMap.get(e.toString()), node.getName().getStartPosition());
@@ -259,7 +260,7 @@ class MyNewASTVisitor extends ASTVisitor
 			//use that to replace previously assigned values
 			if(clist.isEmpty()==false)
 			{
-				globaltypes.replaceValues(e.toString(),clist);
+				globaltypes2.get(e.toString()).replaceValues(scopeArray,clist);
 				//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
 				printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
 				//change affected types of e.toString() too
@@ -378,7 +379,7 @@ class MyNewASTVisitor extends ASTVisitor
 
 			if(clist.isEmpty()==false)
 			{
-				globaltypes.replaceValues(e.toString(),clist);
+				globalmethods.replaceValues(e.toString(),clist);
 				//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
 				//printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
 				//change affected types of e.toString() too
@@ -403,6 +404,7 @@ class MyNewASTVisitor extends ASTVisitor
 		{
 			//System.out.println("###"+node.getName().toString()+"--"+e.toString()+"  5.1");
 			Collection<Node> melist=model.getCandidateMethodNodes(node.getName().toString());
+			ArrayList<Integer> scopeArray = getScopeArray(node);
 			Set<Node> methods=new HashSet<Node>();
 			Set <Node> clist= new HashSet<Node>();
 			printMethodsMap.put(node.toString(),node.getStartPosition());
@@ -410,7 +412,7 @@ class MyNewASTVisitor extends ASTVisitor
 			for(Node me : melist)
 			{
 				if(model.getMethodParams(me).size()==node.arguments().size())
-				{	
+				{
 					if(matchParams(me, node.arguments())==true)
 						methods.add(me);
 				}
@@ -429,10 +431,9 @@ class MyNewASTVisitor extends ASTVisitor
 
 			if(clist.isEmpty()==false)
 			{
-				if(globaltypes.containsKey(e.toString()))
-					globaltypes.replaceValues(e.toString(),clist);
-				else
-					globaltypes.putAll(e.toString(),clist);
+				HashMultimap<ArrayList<Integer>, Node> replacer = HashMultimap.create();
+				replacer.putAll(scopeArray, clist);
+				globaltypes2.put(e.toString(),replacer);
 				if(printTypesMap.containsKey(e.toString())==false)
 				{
 					printTypesMap.put(e.toString(), e.getStartPosition());
@@ -462,12 +463,12 @@ class MyNewASTVisitor extends ASTVisitor
 		}
 	}
 
-	private Set<Node> getNodeSet(HashMultimap<ArrayList<Integer>, Node> celist2, ArrayList<Integer> scopeArray) 
+	private ArrayList<Integer> getNodeSet(HashMultimap<ArrayList<Integer>, Node> celist2, ArrayList<Integer> scopeArray) 
 	{
 		for(ArrayList<Integer> test : celist2.keySet())
 		{
 			if(isSubset(test, scopeArray))
-				return celist2.get(test);
+				return test;
 		}
 		return null;
 	}
@@ -541,11 +542,14 @@ class MyNewASTVisitor extends ASTVisitor
 				if(globaltypes2.containsKey(param.toString()))
 				{
 					HashMultimap<ArrayList<Integer>, Node> celist_temp = globaltypes2.get(param.toString());
-					Set<Node> localTypes = getNodeSet(celist_temp, getScopeArray(param));
-					//Set<Node> localTypes = globaltypes.get(param.toString());
-					for(Node localType : localTypes)
+					ArrayList<Integer> intermediate = getNodeSet(celist_temp, getScopeArray(param));
+					if(intermediate!=null)
 					{
-						possibleTypes.add((String) localType.getProperty("id"));
+						Set<Node> localTypes = celist_temp.get(intermediate);
+						for(Node localType : localTypes)
+						{
+							possibleTypes.add((String) localType.getProperty("id"));
+						}
 					}
 				}
 				else
@@ -897,12 +901,10 @@ class MyNewASTVisitor extends ASTVisitor
 		Collection<Node> ce=model.getCandidateClassNodes(node.getType().toString());
 		for(Node c : ce)
 		{
-			if(c!=null){
 				//globaltypes.put(node.toString(), c);
 				//affectedTypes.put(node.getExpression().getStartPosition(), node.get.getStartPosition());
 				//printtypes.put(node.getType().getStartPosition(), c);
 				printTypesMap.put(node.toString(), node.getType().getStartPosition());
-			}
 		}
 	}
 
@@ -960,20 +962,16 @@ class MyNewASTVisitor extends ASTVisitor
 				//Set<Node> temp=new HashSet<Node>();
 				Set<Node> temp = new HashSet<Node>();
 				HashMultimap<ArrayList<Integer>, Node> celist_temp = globaltypes2.get(lhs);
-				Set<Node> localTypes = getNodeSet(celist_temp, getScopeArray(node));
-				ArrayList<Integer> scopeArray = null;
-				for(ArrayList<Integer> key : celist_temp.keySet())
+				ArrayList<Integer> scopeArray = getNodeSet(celist_temp, getScopeArray(node));
+				if(scopeArray!=null)
 				{
-					if(localTypes.equals(celist_temp.get(key)))
+					Set<Node> localTypes = celist_temp.get(scopeArray);
+					for(Node ce : localTypes)
 					{
-						scopeArray = key;
-						for(Node ce : localTypes)
+						if(globalmethods.get(rhs).contains((String)ce.getProperty("id")))
 						{
-							if(globalmethods.get(rhs).contains((String)ce.getProperty("id")))
-							{
-								flag=1;
-								temp.add(ce);
-							}
+							flag=1;
+							temp.add(ce);
 						}
 					}
 				}
