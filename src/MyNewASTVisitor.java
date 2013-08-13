@@ -21,6 +21,7 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ConstructorInvocation;
 import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
@@ -37,7 +38,6 @@ import org.neo4j.graphdb.Node;
 
 class MyNewASTVisitor extends ASTVisitor
 {
-
 	private GraphDatabase model;
 	private CompilationUnit cu;
 	private int cutype;
@@ -50,12 +50,42 @@ class MyNewASTVisitor extends ASTVisitor
 	private HashMap<String, Integer> printMethodsMap=new HashMap<String, Integer>();//holds node start locs with method names
 	private HashMultimap<Integer, Integer> affectedTypes = HashMultimap.create();//holds node start locs with list of start locs they influence
 	private HashMultimap<Integer, Integer> affectedMethods = HashMultimap.create();//holds node start locs with list of start locs they influence
-
+	private Set<String> importList = new TreeSet<String>();
 	private String classname = null;
 	private String superclassname=null;
 	private ArrayList<Object> interfaces=new ArrayList<Object>();
 
-
+	private Collection<Node> getNewCeList(Collection<Node> celist)
+	{
+		Collection<Node> templist=celist;
+		for(Node ce: celist)
+		{
+			String name = (String) ce.getProperty("id");
+			int flagVar = 0;
+			int size = importList.size();
+			if(importList!=null)
+			{
+				for(String importItem : importList)
+				{
+					if(name.startsWith(importItem)==true || (size>0 && name.startsWith("java.lang")) )
+					{
+						templist.clear();
+						templist.add(ce);
+						flagVar = 1;
+						break;
+					}
+				}
+			}
+			if(flagVar==1)
+				break;
+			else
+			{
+				templist.add(ce);
+			}
+		}
+		celist = templist;
+		return celist;
+	}
 
 	public MyNewASTVisitor(GraphDatabase db, CompilationUnit cu, int cutype) 
 	{
@@ -106,15 +136,12 @@ class MyNewASTVisitor extends ASTVisitor
 				temp = HashMultimap.create();
 			}
 			Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
+			celist = getNewCeList(celist);
 			for(Node ce : celist)
 			{
-				if(ce!=null)
-				{
-					temp.put(scopeArray, ce);
-					//globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), ce);
-					printtypes.put(node.getType().getStartPosition(), ce);
-					printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
-				}
+						temp.put(scopeArray, ce);
+						printtypes.put(node.getType().getStartPosition(), ce);
+						printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
 			}
 			globaltypes2.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), temp);
 		}
@@ -138,10 +165,10 @@ class MyNewASTVisitor extends ASTVisitor
 			if(node.getType().getNodeType()==74)
 			{
 				Collection<Node> celist=model.getCandidateClassNodes(((ParameterizedType)node.getType()).getType().toString());
+				celist = getNewCeList(celist);
 				for(Node ce : celist)
 				{
 						temp.put(scopeArray, ce);
-						//globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(),ce);
 						printtypes.put(node.getType().getStartPosition(), ce);
 						printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
 				}
@@ -149,14 +176,15 @@ class MyNewASTVisitor extends ASTVisitor
 			else
 			{
 				Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
+				celist = getNewCeList(celist);
 				for(Node ce : celist)
 				{
 						temp.put(scopeArray, ce);
-						//globaltypes.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), ce);
-						printtypes.put(node.getType().getStartPosition(),ce);
+						printtypes.put(node.getType().getStartPosition(), ce);
 						printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
 				}
 			}
+			//Collection<>removeUnImported(temp);
 			globaltypes2.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), temp);
 		}
 	}
@@ -172,6 +200,7 @@ class MyNewASTVisitor extends ASTVisitor
 				 * Handles inheritance, where methods from Superclasses can be directly called
 				 */
 				Collection<Node> celist=model.getCandidateClassNodes(superclassname);
+				celist = getNewCeList(celist);
 				for(Node ce : celist)
 				{
 					Collection<Node> melist=model.getMethodNodes(ce);
@@ -294,6 +323,7 @@ class MyNewASTVisitor extends ASTVisitor
 			affectedTypes.put(printTypesMap.get(e.toString()), node.getExpression().getStartPosition());
 			affectedMethods.put(printTypesMap.get(e.toString()), node.getName().getStartPosition());
 			Collection<Node> celist=model.getCandidateClassNodes(e.toString());
+			celist = getNewCeList(celist);
 			for(Node ce : celist)
 			{
 				exactname=(String) ce.getProperty("exactName");
@@ -488,7 +518,8 @@ class MyNewASTVisitor extends ASTVisitor
 		{
 			return true;
 		}
-		TreeSet<Node>graphNodes = new TreeSet<Node>(new Comparator<Node>(){
+		TreeSet<Node>graphNodes = new TreeSet<Node>(new Comparator<Node>()
+		{
 			public int compare(Node a, Node b)
 			{
 				return (Integer)a.getProperty("paramIndex")-(Integer)b.getProperty("paramIndex");
@@ -617,7 +648,7 @@ class MyNewASTVisitor extends ASTVisitor
 				return false;
 		}
 		//System.out.println("MATCH : "+me.getProperty("id"));
-		return true;
+	return true;
 	}
 
 	private Collection<Node> getReplacementClassList(Set<Node> set,	Set<Node> clist) {
@@ -683,6 +714,7 @@ class MyNewASTVisitor extends ASTVisitor
 				temp = HashMultimap.create();
 			}
 			Collection<Node> ce=model.getCandidateClassNodes(param.get(i).getType().toString());
+			ce = getNewCeList(ce);
 			for(Node c : ce)
 			{
 				temp.put(scopeArray, c);
@@ -694,6 +726,7 @@ class MyNewASTVisitor extends ASTVisitor
 		if(superclassname!=null)
 		{
 			Collection<Node> ce=model.getCandidateClassNodes(superclassname);
+			ce = getNewCeList(ce);
 			for(Node c : ce)
 			{
 				Collection<Node> methods=model.getMethodNodes(c);
@@ -715,6 +748,7 @@ class MyNewASTVisitor extends ASTVisitor
 			for(int i=0;i<interfaces.size();i++)
 			{
 				Collection<Node> ce=model.getCandidateClassNodes(interfaces.get(i).toString());
+				ce = getNewCeList(ce);
 				for(Node c : ce)
 				{
 					Collection<Node> methods=model.getMethodNodes(c);
@@ -738,6 +772,7 @@ class MyNewASTVisitor extends ASTVisitor
 	public void endVisit(ConstructorInvocation node)
 	{	//System.out.println("constructor:"+classname+"<init>");
 		Collection<Node> celist=model.getCandidateClassNodes(classname);
+		celist = getNewCeList(celist);
 		for(Node ce : celist)
 		{
 			Collection<Node>melist=model.getMethodNodes(ce);
@@ -760,6 +795,7 @@ class MyNewASTVisitor extends ASTVisitor
 	public void endVisit(SuperConstructorInvocation node)
 	{	
 		Collection<Node> celist=model.getCandidateClassNodes(superclassname);
+		celist = getNewCeList(celist);
 		for(Node ce : celist)
 		{
 			Collection<Node>melist=model.getMethodNodes(ce);
@@ -782,6 +818,7 @@ class MyNewASTVisitor extends ASTVisitor
 	public void endVisit(SuperMethodInvocation node)
 	{
 		Collection<Node> celist=model.getCandidateClassNodes(superclassname);
+		celist = getNewCeList(celist);
 		Set<Node> methods=new TreeSet<Node>();
 		Set<Node> tempmethods1=new TreeSet<Node>();
 		Set<Node> tempmethods2=new TreeSet<Node>();
@@ -850,6 +887,7 @@ class MyNewASTVisitor extends ASTVisitor
 				{
 					//System.out.println("anon:");
 					Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
+					celist = getNewCeList(celist);
 					for(Node ce : celist)
 					{
 						Collection<Node>melist=model.getMethodNodes(ce);
@@ -873,6 +911,7 @@ class MyNewASTVisitor extends ASTVisitor
 		else
 		{
 			Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
+			celist = getNewCeList(celist);
 			for(Node ce:celist)
 			{
 				Collection<Node> melist=model.getMethodNodes(ce);
@@ -899,6 +938,7 @@ class MyNewASTVisitor extends ASTVisitor
 	{	
 		//System.out.println(node.getType().toString()+"0000"+node.toString()+"0000"+node.getParent().getParent());
 		Collection<Node> ce=model.getCandidateClassNodes(node.getType().toString());
+		ce = getNewCeList(ce);
 		for(Node c : ce)
 		{
 				//globaltypes.put(node.toString(), c);
@@ -911,6 +951,7 @@ class MyNewASTVisitor extends ASTVisitor
 	public boolean visit(CastExpression node)
 	{
 		Collection<Node> ce=model.getCandidateClassNodes(node.getType().toString());
+		ce = getNewCeList(ce);
 		HashMultimap<ArrayList<Integer>, Node> temp1= null;
 		HashMultimap<ArrayList<Integer>, Node> temp2= null;
 		ArrayList<Integer> scopeArray = getScopeArray(node);
@@ -984,6 +1025,19 @@ class MyNewASTVisitor extends ASTVisitor
 			}
 		}
 
+		return true;
+	}
+	
+	public boolean visit(ImportDeclaration node)
+	{
+		
+		String importStatement = node.getName().getFullyQualifiedName();
+		if(importStatement.endsWith(".*"))
+		{
+			importStatement= importStatement.substring(0, importStatement.length()-2);
+		}
+		importList.add(importStatement);
+		System.out.println(importStatement);
 		return true;
 	}
 
