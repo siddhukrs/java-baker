@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -57,34 +58,47 @@ class MyNewASTVisitor extends ASTVisitor
 
 	private Collection<Node> getNewCeList(Collection<Node> celist)
 	{
-		Collection<Node> templist=celist;
+		Collection<Node> templist = new HashSet<Node>();
+		int flagVar2 = 0;
+		int flagVar3 = 0;
 		for(Node ce: celist)
 		{
 			String name = (String) ce.getProperty("id");
-			int flagVar = 0;
+			int flagVar1 = 0;
 			int size = importList.size();
-			if(importList!=null)
+			if(size != 0)
 			{
 				for(String importItem : importList)
 				{
-					if(name.startsWith(importItem)==true || (size>0 && name.startsWith("java.lang")) )
+					if(name.startsWith(importItem) || name.startsWith("java.lang"))
 					{
 						templist.clear();
 						templist.add(ce);
-						flagVar = 1;
+						flagVar1 = 1;
 						break;
 					}
 				}
 			}
-			if(flagVar==1)
+			if(flagVar1==1)
 				break;
+			else if(name.startsWith("java."))
+			{
+				System.out.println(name + "~~~~~~~~~~~~~~~~~~~~~~~");
+				if(flagVar2==0)
+				{
+					templist.clear();
+					flagVar2 =1;
+				}
+					templist.add(ce);
+					flagVar3 = 1;
+			}
 			else
 			{
-				templist.add(ce);
+				if(flagVar3 == 0)
+					templist.add(ce);
 			}
 		}
-		celist = templist;
-		return celist;
+		return templist;
 	}
 
 	public MyNewASTVisitor(GraphDatabase db, CompilationUnit cu, int cutype) 
@@ -136,7 +150,9 @@ class MyNewASTVisitor extends ASTVisitor
 				temp = HashMultimap.create();
 			}
 			Collection<Node> celist=model.getCandidateClassNodes(node.getType().toString());
-			celist = getNewCeList(celist);
+			Collection<Node> templist = getNewCeList(celist);
+			celist.clear();
+			celist = templist;
 			for(Node ce : celist)
 			{
 						temp.put(scopeArray, ce);
@@ -250,7 +266,7 @@ class MyNewASTVisitor extends ASTVisitor
 		}
 		else if(globaltypes2.containsKey(e.toString()))
 		{
-			System.out.println(e.toString()+" : "+getScopeArray(node));
+			//System.out.println(e.toString()+" : "+getScopeArray(node));
 			String exactname=null;
 			Set<Node> methods=new HashSet<Node>();
 			Set <Node> clist= new HashSet<Node>();
@@ -586,7 +602,7 @@ class MyNewASTVisitor extends ASTVisitor
 				else
 				{
 					possibleTypes.add("UNKNOWN");
-					System.out.println("UNKNOWN");
+					//System.out.println("UNKNOWN");
 				}
 			}
 			else if(param.getNodeType()==32)
@@ -602,7 +618,7 @@ class MyNewASTVisitor extends ASTVisitor
 				else
 				{
 					possibleTypes.add("UNKNOWN");
-					System.out.println("UNKNOWN");
+					//System.out.println("UNKNOWN");
 				}
 			}
 			else if(param.getNodeType()==14)
@@ -1018,7 +1034,7 @@ class MyNewASTVisitor extends ASTVisitor
 				}
 				if(flag==1)
 				{
-					System.out.println("^^^^^^^^^:"+temp+node.getStartPosition());
+					//System.out.println("^^^^^^^^^:"+temp+node.getStartPosition());
 					globaltypes2.get(lhs).replaceValues(scopeArray,temp);
 				}
 				 
@@ -1037,7 +1053,7 @@ class MyNewASTVisitor extends ASTVisitor
 			importStatement= importStatement.substring(0, importStatement.length()-2);
 		}
 		importList.add(importStatement);
-		System.out.println(importStatement);
+		//System.out.println(importStatement);
 		return true;
 	}
 
@@ -1050,6 +1066,7 @@ class MyNewASTVisitor extends ASTVisitor
 		String[] primitive={};
 		JSONObject main_json=new JSONObject();
 
+		//Collections.sort(printtypes, printtypes.keySet());
 		for(Integer key:printtypes.keySet())
 		{
 			int flag=0;
