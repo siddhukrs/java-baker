@@ -37,7 +37,7 @@ class Main
 	{
 		String input_oracle = "/home/s23subra/workspace/model-generator/maven-graph-database/";
 
-		/*String input_snippet="sample_3.txt";
+		String input_snippet="sample.txt";
 		Parser parser=new Parser(input_oracle);
 		parser.setInputFile(input_snippet);
 		CompilationUnit cu=parser.getCompilationUnitFromFile();
@@ -45,12 +45,12 @@ class Main
 		GraphDatabase db = parser.getGraph();
 		MyNewASTVisitor visitor=new MyNewASTVisitor(db,cu,cutype);
 		cu.accept(visitor);
-		System.out.println(visitor.printJson());*/
-
-		Parser parser=new Parser(input_oracle);
+		System.out.println(visitor.printJson().toString(3));
+		visitor.printFields();
+		/*Parser parser=new Parser(input_oracle);
 		Connection connection = getDatabase("/home/s23subra/workspace/Java Snippet Parser/javadb.db");
 		Element root = getCodeXML("/home/s23subra/workspace/stackoverflow/java_codes.xml");
-		iterate(root, connection, parser);
+		iterate(root, connection, parser);*/
 	}
 
 	private static void iterate(Element root, Connection connection, Parser parser) throws NullPointerException, IOException, ClassNotFoundException, ParseException, SQLException 
@@ -64,9 +64,11 @@ class Main
 			{
 				cnt++;
 				Element post = (Element) i.next();
-				//211, 
+				//211, 606, 1354, 2074, 2812, 3222,3934, 5138, 6245, 6266, 6320, 6326, 6412, 6441, 6838
+				//Exception in thread "main" java.lang.OutOfMemoryError: GC overhead limit exceeded
+
 				Statement statement = connection.createStatement();
-				if(cnt>606)
+				if(cnt>6838)
 				{	
 					String qid=post.attributeValue("qid");
 					String aid=post.attributeValue("aid");

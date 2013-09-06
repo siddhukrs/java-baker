@@ -22,7 +22,6 @@ import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ConstructorInvocation;
 import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.ExpressionStatement;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.ForStatement;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
@@ -58,6 +57,7 @@ class MyNewASTVisitor extends ASTVisitor
 	private String classname = null;
 	private String superclassname=null;
 	private ArrayList<Object> interfaces=new ArrayList<Object>();
+	private int tolerance = 4;
 
 	private Collection<Node> getNewCeList(Collection<Node> celist)
 	{
@@ -112,7 +112,7 @@ class MyNewASTVisitor extends ASTVisitor
 		//db.test();
 	}
 
-	private void printFields()
+	public void printFields()
 	{
 		System.out.println("globalmethods"+globalmethods);
 		System.out.println("globaltypes"+globaltypes2);
@@ -122,6 +122,7 @@ class MyNewASTVisitor extends ASTVisitor
 		System.out.println("printMethodsMap"+printMethodsMap);
 		System.out.println("affectedTypes"+affectedTypes);
 		System.out.println("affectedMethods"+affectedMethods);
+		System.out.println("possibleImportList"+importList);
 	}
 
 	private ArrayList<Integer> getScopeArray(ASTNode node)
@@ -157,13 +158,36 @@ class MyNewASTVisitor extends ASTVisitor
 			for(Node ce : celist)
 			{
 				temp.put(scopeArray, ce);
+				if(celist.size() < tolerance)
+				{
+					String possibleImport = checkAndSlice(ce.getProperty("id").toString());
+					if(possibleImport!=null)
+						importList.add(possibleImport);
+				}
 				printtypes.put(node.getType().getStartPosition(), ce);
+				if(celist.size() < tolerance)
+				{
+					String possibleImport = checkAndSlice(ce.getProperty("id").toString());
+					if(possibleImport!=null)
+						importList.add(possibleImport);
+				}
 				printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
 			}
 			globaltypes2.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), temp);
 		}
 	}
 
+	private String checkAndSlice(String string) 
+	{
+		int loc = string.indexOf('.');
+		if(loc==-1)
+			return null;
+		else
+		{
+			return(string.substring(0, string.lastIndexOf("."))+".*") ;
+		}
+			
+	}
 	public boolean visit(EnhancedForStatement node)
 	{
 		ArrayList<Integer> scopeArray = getScopeArray(node.getParent());
@@ -183,6 +207,22 @@ class MyNewASTVisitor extends ASTVisitor
 		{
 			//System.out.println(ce.getProperty("id"));
 			temp.put(scopeArray, ce);
+			if(celist.size() < tolerance)
+			{
+				String possibleImport = checkAndSlice(ce.getProperty("id").toString());
+				if(possibleImport!=null)
+				{
+					importList.add(possibleImport);
+				}
+			}
+			if(celist.size() < tolerance)
+			{
+				String possibleImport = checkAndSlice(ce.getProperty("id").toString());
+				if(possibleImport!=null)
+				{
+					importList.add(possibleImport);
+				}
+			}
 			printtypes.put(node.getParameter().getType().getStartPosition(), ce);
 			printTypesMap.put(node.getParameter().getName().toString(), node.getParameter().getType().getStartPosition());
 		}
@@ -239,6 +279,14 @@ class MyNewASTVisitor extends ASTVisitor
 				for(Node ce : celist)
 				{
 					temp.put(scopeArray, ce);
+					if(celist.size() < tolerance)
+					{
+						String possibleImport = checkAndSlice(ce.getProperty("id").toString());
+						if(possibleImport!=null)
+						{
+							importList.add(possibleImport);
+						}
+					}
 					printtypes.put(node.getType().getStartPosition(), ce);
 					printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
 				}
@@ -250,6 +298,14 @@ class MyNewASTVisitor extends ASTVisitor
 				for(Node ce : celist)
 				{
 					temp.put(scopeArray, ce);
+					if(celist.size() < tolerance)
+					{
+						String possibleImport = checkAndSlice(ce.getProperty("id").toString());
+						if(possibleImport!=null)
+						{
+							importList.add(possibleImport);
+						}
+					}
 					printtypes.put(node.getType().getStartPosition(), ce);
 					printTypesMap.put(((VariableDeclarationFragment)node.fragments().get(j)).getName().toString(), node.getType().getStartPosition());
 				}
@@ -281,6 +337,14 @@ class MyNewASTVisitor extends ASTVisitor
 						{
 							if(matchParams(me, node.arguments())==true)
 							{
+								if(celist.size() < tolerance)
+								{
+									String possibleImport = checkAndSlice(ce.getProperty("id").toString());
+									if(possibleImport!=null)
+									{
+										importList.add(possibleImport);
+									}
+								}
 								printtypes.put(node.getStartPosition(),ce);
 								printmethods.put(node.getStartPosition(), me);
 								Node retElement = model.getMethodReturn(me);
@@ -302,7 +366,16 @@ class MyNewASTVisitor extends ASTVisitor
 				{
 					if(matchParams(me, node.arguments())==true)
 					{
-						printtypes.put(node.getName().getStartPosition(), model.getMethodContainer(me));
+						Node containerClass = model.getMethodContainer(me);
+						if(melist.size() < tolerance)
+						{
+							String possibleImport = checkAndSlice(containerClass.getProperty("id").toString());
+							if(possibleImport!=null)
+							{
+								importList.add(possibleImport);
+							}
+						}
+						printtypes.put(node.getName().getStartPosition(), containerClass);
 						printmethods.put(node.getName().getStartPosition(), me);
 						Node retElement = model.getMethodReturn(me);
 						if(retElement!=null)
@@ -419,7 +492,21 @@ class MyNewASTVisitor extends ASTVisitor
 				if(printtypes.containsKey(node.getExpression().getStartPosition()))
 					printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
 				else
+				{
+					
 					printtypes.putAll(node.getExpression().getStartPosition(), clist);
+					for(Node cnode : clist)
+					{
+						if(clist.size() < tolerance)
+						{
+							String possibleImport = checkAndSlice(cnode.getProperty("id").toString());
+							if(possibleImport!=null)
+							{
+								importList.add(possibleImport);
+							}
+						}
+					}
+				}
 				//System.out.println(affectedTypes);
 
 			}
@@ -480,7 +567,20 @@ class MyNewASTVisitor extends ASTVisitor
 				if(printtypes.containsKey(node.getExpression().getStartPosition()))
 					printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
 				else
+				{
 					printtypes.putAll(node.getExpression().getStartPosition(), clist);
+					for(Node cnode:clist)
+					{
+						if(clist.size() < tolerance)
+						{
+							String possibleImport = checkAndSlice(cnode.getProperty("id").toString());
+							if(possibleImport!=null)
+							{
+								importList.add(possibleImport);
+							}
+						}
+					}
+				}
 				//System.out.println(affectedTypes);
 
 			}
@@ -831,6 +931,14 @@ class MyNewASTVisitor extends ASTVisitor
 			for(Node c : ce)
 			{
 				temp.put(scopeArray, c);
+				if(ce.size() < tolerance)
+				{
+					String possibleImport = checkAndSlice(c.getProperty("id").toString());
+					if(possibleImport!=null)
+					{
+						importList.add(possibleImport);
+					}
+				}
 				printtypes.put(param.get(i).getType().getStartPosition(),c);
 				printTypesMap.put(param.get(i).getName().toString(), param.get(i).getType().getStartPosition());
 			}
@@ -851,7 +959,16 @@ class MyNewASTVisitor extends ASTVisitor
 						{
 							if(matchParams(me, node.parameters())==true)
 							{
-								printtypes.put(node.getStartPosition(),model.getMethodContainer(me));
+								Node parentNode = model.getMethodContainer(me);
+								if(methods.size() < tolerance)
+								{
+									String possibleImport = checkAndSlice(parentNode.getProperty("id").toString());
+									if(possibleImport!=null)
+									{
+										importList.add(possibleImport);
+									}
+								}
+								printtypes.put(node.getStartPosition(),parentNode);
 								printmethods.put(node.getStartPosition(), me);
 							}
 						}	
@@ -876,7 +993,16 @@ class MyNewASTVisitor extends ASTVisitor
 							{
 								if(matchParams(me, node.parameters())==true)
 								{
-									printtypes.put(node.getStartPosition(),model.getMethodContainer(me));
+									Node parentNode = model.getMethodContainer(me);
+									if(methods.size() < tolerance)
+									{
+										String possibleImport = checkAndSlice(parentNode.getProperty("id").toString());
+										if(possibleImport!=null)
+										{
+											importList.add(possibleImport);
+										}
+									}
+									printtypes.put(node.getStartPosition(),parentNode);
 									printmethods.put(node.getStartPosition(), me);
 								}
 							}	
@@ -902,7 +1028,16 @@ class MyNewASTVisitor extends ASTVisitor
 					if(matchParams(me, node.arguments())==true)
 					{
 						printmethods.put(node.getStartPosition(), me);
-						printtypes.put(node.getStartPosition(),model.getMethodContainer(me));
+						Node parentNode = model.getMethodContainer(me);
+						if(melist.size() < tolerance)
+						{
+							String possibleImport = checkAndSlice(parentNode.getProperty("id").toString());
+							if(possibleImport!=null)
+							{
+								importList.add(possibleImport);
+							}
+						}
+						printtypes.put(node.getStartPosition(),parentNode);
 						if(model.getMethodReturn(me)!=null)
 							globalmethods.put(node.toString(), model.getMethodReturn(me));
 
@@ -930,6 +1065,14 @@ class MyNewASTVisitor extends ASTVisitor
 		for(Node ce : celist)
 		{
 			temp.put(scopeArray, ce);
+			if(celist.size() < tolerance)
+			{
+				String possibleImport = checkAndSlice(ce.getProperty("id").toString());
+				if(possibleImport!=null)
+				{
+					importList.add(possibleImport);
+				}
+			}
 			printtypes.put(node.getException().getType().getStartPosition(), ce);
 			printTypesMap.put(node.getException().getName().toString(), node.getException().getType().getStartPosition());
 		}
@@ -951,7 +1094,16 @@ class MyNewASTVisitor extends ASTVisitor
 					if(matchParams(me, node.arguments())==true)
 					{
 						printmethods.put(node.getStartPosition(),me);
-						printtypes.put(node.getStartPosition(), model.getMethodContainer(me));
+						Node parentNode = model.getMethodContainer(me);
+						if(melist.size() < tolerance)
+						{
+							String possibleImport = checkAndSlice(parentNode.getProperty("id").toString());
+							if(possibleImport!=null)
+							{
+								importList.add(possibleImport);
+							}
+						}
+						printtypes.put(node.getStartPosition(), parentNode);
 						if(model.getMethodReturn(me)!=null)
 							globalmethods.put(node.toString(),model.getMethodReturn(me));
 					}
@@ -1011,7 +1163,16 @@ class MyNewASTVisitor extends ASTVisitor
 				if(matchParams(me, node.arguments())==true)
 				{
 					printmethods.put(node.getName().getStartPosition(), me);
-					printtypes.put(node.getName().getStartPosition(),model.getMethodContainer(me));
+					Node parentNode = model.getMethodContainer(me);
+					if(melist.size() < tolerance)
+					{
+						String possibleImport = checkAndSlice(parentNode.getProperty("id").toString());
+						if(possibleImport!=null)
+						{
+							importList.add(possibleImport);
+						}
+					}
+					printtypes.put(node.getName().getStartPosition(),parentNode);
 					if(model.getMethodReturn(me)!=null)
 						globalmethods.put(node.toString(), model.getMethodReturn(me));
 				}
@@ -1042,6 +1203,15 @@ class MyNewASTVisitor extends ASTVisitor
 								if(matchParams(me, md.parameters())==true)
 								{
 									printmethods.put(md.getStartPosition(),me);
+									Node parentNode = model.getMethodContainer(me);
+									if(melist.size() < tolerance)
+									{
+										String possibleImport = checkAndSlice(parentNode.getProperty("id").toString());
+										if(possibleImport!=null)
+										{
+											importList.add(possibleImport);
+										}
+									}
 									printtypes.put(md.getStartPosition(), model.getMethodContainer(me));
 								}
 							}
@@ -1123,6 +1293,14 @@ class MyNewASTVisitor extends ASTVisitor
 			if(c!=null)
 			{
 				temp1.put(scopeArray, c);
+				if(ce.size() < tolerance)
+				{
+					String possibleImport = checkAndSlice(c.getProperty("id").toString());
+					if(possibleImport!=null)
+					{
+						importList.add(possibleImport);
+					}
+				}
 				printtypes.put(node.getType().getStartPosition(), c);
 				temp2.put(scopeArray, c);
 			}
