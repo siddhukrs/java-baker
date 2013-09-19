@@ -57,7 +57,7 @@ class MyNewASTVisitor extends ASTVisitor
 	private String classname = null;
 	private String superclassname=null;
 	private ArrayList<Object> interfaces=new ArrayList<Object>();
-	private int tolerance = 4;
+	private int tolerance = 3;
 
 	private Collection<Node> getNewCeList(Collection<Node> celist)
 	{
@@ -545,25 +545,25 @@ class MyNewASTVisitor extends ASTVisitor
 
 			if(clist.isEmpty()==false)
 			{
-				/*
+				
 					//globaltypes.replaceValues(e.toString(),clist);
 					//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
 					//printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
 					//change affected types of e.toString() too
-					System.out.println("1&&&"+clist);
+					//System.out.println("1&&&"+clist);
 					for(Integer affectedNode:affectedTypes.get(printTypesMap.get(e.toString())))
 					{
 						printtypes.replaceValues(affectedNode, clist);
-						System.out.println("0");
+						//System.out.println("0");
 					}
 
 					for(Integer affectedNode:affectedMethods.get(printTypesMap.get(e.toString())))
 					{
-						Collection<MethodElement>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
-						System.out.println("1:"+affectedNode);
+						Collection<Node>temp=getReplacementClassList(printmethods.get(affectedNode),clist);
+						//System.out.println("1:"+affectedNode);
 							printmethods.replaceValues(affectedNode, temp);
 					}
-				 */
+				 
 				if(printtypes.containsKey(node.getExpression().getStartPosition()))
 					printtypes.replaceValues(node.getExpression().getStartPosition(), clist);
 				else
@@ -1396,7 +1396,52 @@ class MyNewASTVisitor extends ASTVisitor
 				}
 				if(isprimitive==0)
 				{
-					namelist.add("\""+type_name.getProperty("id")+"\"");
+					String nameOfClass = (String)type_name.getProperty("id");
+					/*if(nameOfClass.indexOf("com.google.appengine.repackaged.")!=-1 || 
+							nameOfClass.indexOf("com.ning.metrics.serialization")!=-1 || 
+									nameOfClass.indexOf("com.ning.metrics.eventtracker")!=-1 || 
+											nameOfClass.indexOf("jruby.joda.")!=-1 || 
+													nameOfClass.indexOf("org.elasticsearch.common")!=-1 || 
+															nameOfClass.indexOf("com.proofpoint.hive")!=-1 || 
+																	nameOfClass.indexOf("clover.cenqua_com_licensing")!=-1 ||
+																			nameOfClass.indexOf("de.huxhorn.sulky.stax")!=-1 ||
+																					nameOfClass.indexOf("org.osjava.reportrunner")!=-1 ||
+																						nameOfClass.indexOf("com.ning.metrics.eventtracker")!=-1)*/
+					if(nameOfClass.indexOf("br.com.caelum.vraptor")!=-1 || 
+						nameOfClass.indexOf("com.cedarsoft")!=-1 || 
+						nameOfClass.indexOf("com.cloudbees")!=-1 || 
+						nameOfClass.indexOf("com.ovea.jetty")!=-1 || 
+						nameOfClass.indexOf("com.wwm.attrs.internal")!=-1 || 
+						nameOfClass.indexOf("cucumber.runtime")!=-1 || 
+						nameOfClass.indexOf("edu.internet2")!=-1 ||
+						nameOfClass.indexOf("hudson.plugins")!=-1 ||
+						nameOfClass.indexOf("net.incongru.taskman")!=-1 ||
+						nameOfClass.indexOf("no.antares")!=-1 ||
+						nameOfClass.indexOf("org.activemq")!=-1 ||
+						nameOfClass.indexOf("org.apache")!=-1 ||
+						nameOfClass.indexOf("org.codehaus")!=-1 ||
+						nameOfClass.indexOf("org.fabric3")!=-1 ||
+						nameOfClass.indexOf("org.jasig")!=-1 ||
+						nameOfClass.indexOf("org.kohsuke")!=-1 ||
+						nameOfClass.indexOf("org.kuali")!=-1 ||
+						nameOfClass.indexOf("org.mattressframework")!=-1 ||
+						nameOfClass.indexOf("org.nakedobjects")!=-1 ||
+						nameOfClass.indexOf("org.pitest")!=-1 ||
+						nameOfClass.indexOf("org.sca4j")!=-1 ||
+						nameOfClass.indexOf("org.sonatype")!=-1 ||
+						nameOfClass.indexOf("org.springframework")!=-1 ||
+						nameOfClass.indexOf("org.jboss")!=-1 ||
+						nameOfClass.indexOf("org.compass")!=-1 ||
+						nameOfClass.indexOf("org.jibx")!=-1 ||
+						nameOfClass.indexOf("org.dom4j")!=-1 ||
+						nameOfClass.indexOf("com.quigley")!=-1 ||
+						nameOfClass.indexOf("org.compass")!=-1 ||
+						nameOfClass.indexOf("de.javakaffee")!=-1)
+						{
+						System.out.println("came hetre");
+						}
+					else
+						namelist.add("\""+nameOfClass+"\"");
 					if(flag==0)
 					{
 						cname=(String) type_name.getProperty("exactName");
@@ -1409,7 +1454,7 @@ class MyNewASTVisitor extends ASTVisitor
 			{
 				JSONObject json = new JSONObject();
 				json.accumulate("line_number",Integer.toString(cu.getLineNumber(key)-cutype));
-				json.accumulate("precision", Integer.toString(printtypes.get(key).size()));
+				json.accumulate("precision", Integer.toString(namelist.size()));
 				json.accumulate("name",cname);
 				json.accumulate("elements",namelist);
 				json.accumulate("type","api_type");
@@ -1424,14 +1469,59 @@ class MyNewASTVisitor extends ASTVisitor
 			String mname=null;
 			for(Node method_name:printmethods.get(key))
 			{
-				namelist.add("\""+method_name.getProperty("id")+"\"");
-				mname=(String) method_name.getProperty("exactName");
+				String nameOfMethod = (String)method_name.getProperty("id");
+				/*if(nameOfMethod.indexOf("com.google.appengine.repackaged.")!=-1 || 
+						nameOfMethod.indexOf("com.ning.metrics.serialization")!=-1 || 
+								nameOfMethod.indexOf("com.ning.metrics.eventtracker")!=-1 || 
+										nameOfMethod.indexOf("jruby.joda.")!=-1 || 
+												nameOfMethod.indexOf("org.elasticsearch.common")!=-1 || 
+														nameOfMethod.indexOf("com.proofpoint.hive")!=-1 || 
+																nameOfMethod.indexOf("clover.cenqua_com_licensing")!=-1 ||
+																		nameOfMethod.indexOf("de.huxhorn.sulky.stax")!=-1 ||
+																				nameOfMethod.indexOf("org.osjava.reportrunner")!=-1 ||
+																					nameOfMethod.indexOf("com.ning.metrics.eventtracker")!=-1)*/
+				String nameOfClass = nameOfMethod;
+				if(nameOfClass.indexOf("br.com.caelum.vraptor")!=-1 || 
+						nameOfClass.indexOf("com.cedarsoft")!=-1 || 
+						nameOfClass.indexOf("com.cloudbees")!=-1 || 
+						nameOfClass.indexOf("com.ovea.jetty")!=-1 || 
+						nameOfClass.indexOf("com.wwm.attrs.internal")!=-1 || 
+						nameOfClass.indexOf("cucumber.runtime")!=-1 || 
+						nameOfClass.indexOf("edu.internet2")!=-1 ||
+						nameOfClass.indexOf("hudson.plugins")!=-1 ||
+						nameOfClass.indexOf("net.incongru.taskman")!=-1 ||
+						nameOfClass.indexOf("no.antares")!=-1 ||
+						nameOfClass.indexOf("org.activemq")!=-1 ||
+						nameOfClass.indexOf("org.apache")!=-1 ||
+						nameOfClass.indexOf("org.codehaus")!=-1 ||
+						nameOfClass.indexOf("org.fabric3")!=-1 ||
+						nameOfClass.indexOf("org.jasig")!=-1 ||
+						nameOfClass.indexOf("org.kohsuke")!=-1 ||
+						nameOfClass.indexOf("org.kuali")!=-1 ||
+						nameOfClass.indexOf("org.mattressframework")!=-1 ||
+						nameOfClass.indexOf("org.nakedobjects")!=-1 ||
+						nameOfClass.indexOf("org.pitest")!=-1 ||
+						nameOfClass.indexOf("org.sca4j")!=-1 ||
+						nameOfClass.indexOf("org.sonatype")!=-1 ||
+						nameOfClass.indexOf("org.springframework")!=-1 ||
+						nameOfClass.indexOf("org.jboss")!=-1 ||
+						nameOfClass.indexOf("org.compass")!=-1 ||
+						nameOfClass.indexOf("org.jibx")!=-1 ||
+						nameOfClass.indexOf("org.dom4j")!=-1 ||
+						nameOfClass.indexOf("com.quigley")!=-1 ||
+						nameOfClass.indexOf("org.compass")!=-1 ||
+						nameOfClass.indexOf("de.javakaffee")!=-1)	
+				{}
+				else
+					namelist.add("\""+nameOfMethod+"\"");
+					//namelist.add("\""+method_name.getProperty("id")+"\"");
+					mname=(String) method_name.getProperty("exactName");
 			}
 			if(namelist.isEmpty()==false)
 			{
 				JSONObject json = new JSONObject();
 				json.accumulate("line_number",Integer.toString(cu.getLineNumber(key)-cutype));
-				json.accumulate("precision", Integer.toString(printmethods.get(key).size()));
+				json.accumulate("precision", Integer.toString(namelist.size()));
 				json.accumulate("name",mname);
 				json.accumulate("elements",namelist);
 				json.accumulate("type","api_method");
