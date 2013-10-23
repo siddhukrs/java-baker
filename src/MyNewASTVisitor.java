@@ -53,7 +53,7 @@ class MyNewASTVisitor extends ASTVisitor
 	private HashMap<String, Integer> printMethodsMap=new HashMap<String, Integer>();//holds node start locs with method names
 	private HashMultimap<Integer, Integer> affectedTypes = HashMultimap.create();//holds node start locs with list of start locs they influence
 	private HashMultimap<Integer, Integer> affectedMethods = HashMultimap.create();//holds node start locs with list of start locs they influence
-	private Set<String> importList = new TreeSet<String>();
+	private Set<String> importList = new HashSet<String>();
 	private String classname = null;
 	private String superclassname=null;
 	private ArrayList<Object> interfaces=new ArrayList<Object>();
@@ -114,7 +114,7 @@ class MyNewASTVisitor extends ASTVisitor
 
 	public void printFields()
 	{
-		System.out.println("globalmethods"+globalmethods);
+		/*System.out.println("globalmethods"+globalmethods);
 		System.out.println("globaltypes"+globaltypes2);
 		System.out.println("printtypes"+printtypes);
 		System.out.println("printmethods"+printmethods);
@@ -122,7 +122,7 @@ class MyNewASTVisitor extends ASTVisitor
 		System.out.println("printMethodsMap"+printMethodsMap);
 		System.out.println("affectedTypes"+affectedTypes);
 		System.out.println("affectedMethods"+affectedMethods);
-		System.out.println("possibleImportList"+importList);
+		System.out.println("possibleImportList"+importList);*/
 	}
 
 	private ArrayList<Integer> getScopeArray(ASTNode node)
@@ -587,9 +587,9 @@ class MyNewASTVisitor extends ASTVisitor
 		}
 		else if(globalmethods.containsKey(e.toString()))
 		{
-			//System.out.println("###"+node.getName().toString()+"  4.1");
 			String exactname="";
 			Set<Node> celist=globalmethods.get(e.toString());
+			System.out.println("###"+node.getName().toString()+ " : " + celist);
 			Set<Node> methods=new HashSet<Node>();
 			Set <Node> clist= new HashSet<Node>();
 			printMethodsMap.put(node.toString(),node.getStartPosition());
@@ -1407,7 +1407,7 @@ class MyNewASTVisitor extends ASTVisitor
 																			nameOfClass.indexOf("de.huxhorn.sulky.stax")!=-1 ||
 																					nameOfClass.indexOf("org.osjava.reportrunner")!=-1 ||
 																						nameOfClass.indexOf("com.ning.metrics.eventtracker")!=-1)*/
-					if(nameOfClass.indexOf("br.com.caelum.vraptor")!=-1 || 
+					/*if(nameOfClass.indexOf("br.com.caelum.vraptor")!=-1 || 
 						nameOfClass.indexOf("com.cedarsoft")!=-1 || 
 						nameOfClass.indexOf("com.cloudbees")!=-1 || 
 						nameOfClass.indexOf("com.ovea.jetty")!=-1 || 
@@ -1440,7 +1440,7 @@ class MyNewASTVisitor extends ASTVisitor
 						{
 						System.out.println("came hetre");
 						}
-					else
+					else*/
 						namelist.add("\""+nameOfClass+"\"");
 					if(flag==0)
 					{
@@ -1481,7 +1481,7 @@ class MyNewASTVisitor extends ASTVisitor
 																				nameOfMethod.indexOf("org.osjava.reportrunner")!=-1 ||
 																					nameOfMethod.indexOf("com.ning.metrics.eventtracker")!=-1)*/
 				String nameOfClass = nameOfMethod;
-				if(nameOfClass.indexOf("br.com.caelum.vraptor")!=-1 || 
+				/*if(nameOfClass.indexOf("br.com.caelum.vraptor")!=-1 || 
 						nameOfClass.indexOf("com.cedarsoft")!=-1 || 
 						nameOfClass.indexOf("com.cloudbees")!=-1 || 
 						nameOfClass.indexOf("com.ovea.jetty")!=-1 || 
@@ -1512,7 +1512,7 @@ class MyNewASTVisitor extends ASTVisitor
 						nameOfClass.indexOf("org.compass")!=-1 ||
 						nameOfClass.indexOf("de.javakaffee")!=-1)	
 				{}
-				else
+				else*/
 					namelist.add("\""+nameOfMethod+"\"");
 					//namelist.add("\""+method_name.getProperty("id")+"\"");
 					mname=(String) method_name.getProperty("exactName");

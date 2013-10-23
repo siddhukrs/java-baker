@@ -13,7 +13,6 @@ import org.dom4j.io.SAXReader;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.neo4j.graphdb.Transaction;
 
 
 
@@ -23,7 +22,6 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
@@ -35,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 
-class Main
+public class Main
 {
 	
 	
@@ -43,21 +41,21 @@ class Main
 	{
 		String input_oracle = "/home/s23subra/workspace/model-generator/maven-graph-database/";
 
-		/*String input_snippet="sample.txt";
+		String input_snippet="sample.txt";
 		Parser parser=new Parser(input_oracle);
 		parser.setInputFile(input_snippet);
 		CompilationUnit cu=parser.getCompilationUnitFromFile();
 		int cutype=parser.getCuType();
 		GraphDatabase db = parser.getGraph();
-		MyNewASTVisitor visitor=new MyNewASTVisitor(db,cu,cutype);
+		revisedASTVisitor visitor=new revisedASTVisitor(db,cu,cutype);
 		cu.accept(visitor);
 		System.out.println(visitor.printJson().toString(3));
-		visitor.printFields();*/
+		visitor.printFields();
 		
-		Parser parser=new Parser(input_oracle);
+		/*Parser parser=new Parser(input_oracle);
 		Connection connection = getDatabase("/home/s23subra/workspace/Java Snippet Parser/javadb.db");
 		Element root = getCodeXML("/home/s23subra/workspace/stackoverflow/java_codes_tags.xml");
-		iterate(root, connection, parser);
+		iterate(root, connection, parser);*/
 	}
 
 	public static void iterate(Element root, Connection connection, Parser parser) throws NullPointerException, IOException, ClassNotFoundException, ParseException, SQLException  
