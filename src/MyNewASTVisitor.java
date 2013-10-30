@@ -860,11 +860,11 @@ class MyNewASTVisitor extends ASTVisitor
 			if(flag==1)
 				return false;
 		}
-		//System.out.println("MATCH : "+me.getProperty("id"));
 		return true;
 	}
 
-	private Collection<Node> getReplacementClassList(Set<Node> set,	Set<Node> clist) {
+	private Collection<Node> getReplacementClassList(Set<Node> set,	Set<Node> clist) 
+	{
 		Collection<Node> returnSet=new HashSet<Node>();
 		for(Node me: set)
 		{
@@ -875,11 +875,9 @@ class MyNewASTVisitor extends ASTVisitor
 				if(((String)ce.getProperty("id")).equals(cname))
 				{
 					flag=1;
-					//System.out.println("777777777777777"+me.getId());
 				}
 				else
 				{
-					//System.out.println("00000000000"+me.getId());
 				}
 			}
 			if(flag==1)
@@ -915,7 +913,6 @@ class MyNewASTVisitor extends ASTVisitor
 		List<SingleVariableDeclaration> param=node.parameters();
 		for(int i=0;i<param.size();i++)
 		{
-			//System.out.println(param.get(i).getType().toString()+" : "+getScopeArray(node));
 			ArrayList<Integer> scopeArray = getScopeArray(node);
 			HashMultimap<ArrayList<Integer>,Node> temp = null;
 			if(globaltypes2.containsKey(param.get(i).getName().toString()))
@@ -1015,7 +1012,7 @@ class MyNewASTVisitor extends ASTVisitor
 	}
 
 	public void endVisit(ConstructorInvocation node)
-	{	//System.out.println("constructor:"+classname+"<init>");
+	{	
 		Collection<Node> celist=model.getCandidateClassNodes(classname);
 		celist = getNewCeList(celist);
 		for(Node ce : celist)
@@ -1049,7 +1046,6 @@ class MyNewASTVisitor extends ASTVisitor
 
 	public boolean visit(CatchClause node)
 	{
-		//System.out.println(node.getException().getName().toString());
 		ArrayList<Integer> scopeArray = getScopeArray(node);
 		HashMultimap<ArrayList<Integer>, Node> temp = null;
 		if(globaltypes2.containsKey(node.getException().getName().toString()))
@@ -1149,14 +1145,11 @@ class MyNewASTVisitor extends ASTVisitor
 				//System.out.println("****"+e.toString()+":"+printTypesMap.get(e.toString())+":"+clist+":"+node.getName().toString()+":"+node.getStartPosition());
 				//printtypes.replaceValues(printTypesMap.get(e.toString()), clist);
 				//change affected types of e.toString() too
-				//System.out.println("1&&&"+clist);
 				printtypes.replaceValues(node.getStartPosition(), clist);
-				//System.out.println(affectedTypes);
 			}
 		}
 		if(tempmethods1.isEmpty() && tempmethods2.isEmpty())
 		{
-			//System.out.println("yoyo");
 			Collection<Node> melist=model.getCandidateMethodNodes(node.getName().toString());
 			for(Node me : melist)
 			{

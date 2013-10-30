@@ -39,6 +39,7 @@ public class Main
 	
 	public static void main(String args[]) throws IOException, NullPointerException, ClassNotFoundException, DocumentException, ParseException, SQLException
 	{
+		long start = System.nanoTime();
 		String input_oracle = "/home/s23subra/workspace/model-generator/maven-graph-database/";
 
 		String input_snippet="sample.txt";
@@ -51,7 +52,8 @@ public class Main
 		cu.accept(visitor);
 		System.out.println(visitor.printJson().toString(3));
 		visitor.printFields();
-		
+		long end = System.nanoTime();
+		System.out.println("Total Time" + " - " + String.valueOf((double)(end-start)/(1000000000)));
 		/*Parser parser=new Parser(input_oracle);
 		Connection connection = getDatabase("/home/s23subra/workspace/Java Snippet Parser/javadb.db");
 		Element root = getCodeXML("/home/s23subra/workspace/stackoverflow/java_codes_tags.xml");
