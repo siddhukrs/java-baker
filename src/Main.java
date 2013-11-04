@@ -42,47 +42,13 @@ public class Main
 		long start = System.nanoTime();
 		
 		String input_oracle = "/home/s23subra/workspace/model-generator/maven-graph-database/";
-		String input_snippet = "sample.txt";
-		Parser parser = new Parser(input_oracle);
-		parser.setInputFile(input_snippet);
+		String input_file = "sample.txt";
+		Parser parser = new Parser(input_oracle, input_file);
 		CompilationUnit cu = parser.getCompilationUnitFromFile();
-		int cutype=parser.getCuType();
+		int cutype = parser.getCuType();
 		GraphDatabase db = parser.getGraph();
 		
-		FirstASTVisitor visitor1 = new FirstASTVisitor(db,cu,cutype);
-		cu.accept(visitor1);
-		System.out.println(visitor1.printJson().toString(3));
-		visitor1.printFields();
-		
-		SubsequentASTVisitor visitor2 = new SubsequentASTVisitor(visitor1);
-		cu.accept(visitor2);
-		System.out.println(visitor2.printJson().toString(3));
-		visitor2.printFields();
-		
-		SubsequentASTVisitor visitor3 = new SubsequentASTVisitor(visitor2);
-		cu.accept(visitor3);
-		System.out.println(visitor3.printJson().toString(3));
-		visitor3.printFields();
-		
-		SubsequentASTVisitor prev = visitor2;
-		SubsequentASTVisitor curr = visitor3;
-		
-		while(compareMaps(curr, prev) == false)
-		{
-			SubsequentASTVisitor visitor4 = new SubsequentASTVisitor(curr);
-			cu.accept(visitor4);
-			System.out.println(visitor4.printJson().toString(3));
-			visitor4.printFields();
-			prev = curr;
-			curr = visitor4;
-			
-		}
-		
-		
-		
-		
-		
-		
+		vistAST(db, cu, cutype);
 		
 		long end = System.nanoTime();
 		System.out.println("Total Time" + " - " + String.valueOf((double)(end-start)/(1000000000)));
@@ -93,7 +59,37 @@ public class Main
 	}
 	
 	
-	
+	private static void vistAST(GraphDatabase db, CompilationUnit cu, int cutype)
+	{
+		
+		FirstASTVisitor first_visitor = new FirstASTVisitor(db,cu,cutype);
+		cu.accept(first_visitor);
+		System.out.println(first_visitor.printJson().toString(3));
+		first_visitor.printFields();
+		
+		SubsequentASTVisitor second_visitor = new SubsequentASTVisitor(first_visitor);
+		cu.accept(second_visitor);
+		System.out.println(second_visitor.printJson().toString(3));
+		second_visitor.printFields();
+		
+		SubsequentASTVisitor third_visitor = new SubsequentASTVisitor(second_visitor);
+		cu.accept(third_visitor);
+		System.out.println(third_visitor.printJson().toString(3));
+		third_visitor.printFields();
+		
+		SubsequentASTVisitor previous_visitor = second_visitor;
+		SubsequentASTVisitor current_visitor = third_visitor;
+		
+		while(compareMaps(current_visitor, previous_visitor) == false)
+		{
+			SubsequentASTVisitor new_visitor = new SubsequentASTVisitor(current_visitor);
+			cu.accept(new_visitor);
+			System.out.println(new_visitor.printJson().toString(3));
+			new_visitor.printFields();
+			previous_visitor = current_visitor;
+			current_visitor = new_visitor;
+		}
+	}
 
 	private static boolean compareMaps(SubsequentASTVisitor curr, SubsequentASTVisitor prev) 
 	{

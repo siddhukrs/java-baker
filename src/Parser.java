@@ -14,28 +14,33 @@ import ca.uwaterloo.cs.se.inconsistency.core.model2.so.*;
 class Parser{
 
 	private int flag = 0;
-	private String input_snippet;
+	private String input_file;
 	private String input_oracle;
 	private int cutype;
+	
 	/*
 	 * cutype = 0 => already has class body and method body
 	 * 			1 => has a method wrapper but no class
 	 * 			2 => missing both method and class wrapper (just a bunch of statements) 
 	 */
-	public Parser(String oracle) throws IOException {
+	
+	public Parser(String oracle, String input_file_path) throws IOException 
+	{
 		//String path = getPath();
 		//this.input_snippet = path + File.separator + input;
 		//this.input_oracle = path + File.separator + oracle;
-		this.input_oracle=oracle;
+		this.input_oracle = oracle;
+		setInputFile(input_file_path);
 	}
 
-	public void setInputFile(String input) throws IOException
+	private void setInputFile(String input) throws IOException
 	{
 		String path = getPath();
-		this.input_snippet = path + File.separator + input;
+		this.input_file = path + File.separator + input;
 	}
 
-	private String getPath() throws IOException {
+	private String getPath() throws IOException 
+	{
 		Process p = Runtime.getRuntime().exec("pwd");
 		BufferedReader stdInput = new BufferedReader(new InputStreamReader(
 				p.getInputStream()));
@@ -47,7 +52,8 @@ class Parser{
 		return path;
 	}
 
-	public ImpreciseModel getModel() {
+	public ImpreciseModel getModel() 
+	{
 		Model2XMLReader xmlrdf = new Model2XMLReader(this.input_oracle);
 		Model knownModel = xmlrdf.read();
 		ImpreciseModel model = new ImpreciseModel(knownModel);
@@ -58,10 +64,10 @@ class Parser{
 	{
 		GraphDatabase graphDb = new GraphDatabase(input_oracle);
 		return graphDb;
-
 	}
 
-	private ASTParser getASTParser(String sourceCode) {
+	private ASTParser getASTParser(String sourceCode) 
+	{
 		ASTParser parser = ASTParser.newParser(AST.JLS3);
 		parser.setResolveBindings(true);
 		parser.setStatementsRecovery(true);
@@ -70,13 +76,15 @@ class Parser{
 		return parser;
 	}
 
-	private String getCodefromSnippet() throws IOException {
-		FileInputStream fis = new FileInputStream(this.input_snippet);
+	private String getCodefromSnippet() throws IOException 
+	{
+		FileInputStream fis = new FileInputStream(this.input_file);
 		DataInputStream in = new DataInputStream(fis);
 		BufferedReader br = new BufferedReader(new InputStreamReader(in));
 		String strLine;
 		String code = new String();
-		while ((strLine = br.readLine()) != null) {
+		while ((strLine = br.readLine()) != null) 
+		{
 			code = code + strLine + "\n";
 		}
 		br.close();
@@ -92,22 +100,25 @@ class Parser{
 		String code = getCodefromSnippet();
 		ASTParser parser = getASTParser(code);
 		ASTNode cu = (CompilationUnit) parser.createAST(null);
-		//System.out.println(cu);
 		cutype = 0;
-		if (((CompilationUnit) cu).types().isEmpty()) {
+		if (((CompilationUnit) cu).types().isEmpty()) 
+		{
 			flag = 1;
 			// System.out.println("Missing class body, wrapper added");
 			cutype = 1;
 			String s1 = "public class sample{\n" + code + "\n}";
 			parser = getASTParser(s1);
 			cu = parser.createAST(null);
-			cu.accept(new ASTVisitor() {
-				public boolean visit(MethodDeclaration node) {
+			cu.accept(new ASTVisitor() 
+			{
+				public boolean visit(MethodDeclaration node) 
+				{
 					flag = 2;
 					return false;
 				}
 			});
-			if (flag == 1) {
+			if (flag == 1) 
+			{
 				// System.out.println("Missing method, wrapper added");
 				s1 = "public class sample{\n public void foo(){\n" + code
 						+ "\n}\n}";
@@ -115,13 +126,16 @@ class Parser{
 				parser = getASTParser(s1);
 				cu = parser.createAST(null);
 			}
-			if (flag == 2) {
+			if (flag == 2) 
+			{
 				s1 = "public class sample{\n" + code + "\n}";
 				cutype = 1;
 				parser = getASTParser(s1);
 				cu = parser.createAST(null);
 			}
-		} else {
+		} 
+		else 
+		{
 			// System.out.println("Has complete class and method bodies, code not modified");
 			cutype = 0;
 			parser = getASTParser(code);
@@ -173,7 +187,7 @@ class Parser{
 		return (CompilationUnit) cu;
 	}
 
-	public int getCuType()
+	int getCuType()
 	{
 		return cutype;
 	}

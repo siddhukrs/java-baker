@@ -1,11 +1,9 @@
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
+import java.util.Stack;
 
 
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -14,30 +12,20 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import com.google.common.collect.HashMultimap;
 
 import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.Assignment;
-import org.eclipse.jdt.core.dom.CastExpression;
-import org.eclipse.jdt.core.dom.CatchClause;
-import org.eclipse.jdt.core.dom.ClassInstanceCreation;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.ConstructorInvocation;
-import org.eclipse.jdt.core.dom.EnhancedForStatement;
 import org.eclipse.jdt.core.dom.Expression;
-import org.eclipse.jdt.core.dom.FieldDeclaration;
-import org.eclipse.jdt.core.dom.ForStatement;
-import org.eclipse.jdt.core.dom.ImportDeclaration;
-import org.eclipse.jdt.core.dom.InfixExpression;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SuperConstructorInvocation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
-import org.eclipse.jdt.core.dom.TypeDeclaration;
-import org.eclipse.jdt.core.dom.VariableDeclarationStatement;
 import org.json.JSONObject;
 import org.neo4j.graphdb.Node;
 
 
 class SubsequentASTVisitor extends ASTVisitor
 {
+	public HashMap<Node, Node> methodContainerCache;
+	public HashMap<Node, Node> methodReturnCache;
 	public GraphDatabase model;
 	public CompilationUnit cu;
 	public int cutype;
@@ -47,21 +35,21 @@ class SubsequentASTVisitor extends ASTVisitor
 	public HashMultimap<Integer, Node> printmethods;//holds node start posns and possible methods they can be
 	public HashMap<String, Integer> printTypesMap;//maps node start loc to variable names
 	public HashMap<String, Integer> printMethodsMap;//holds node start locs with method names
-	public Set<String> importList = new HashSet<String>();
-	public String classname = new String();
-	public String superclassname = new String();
-	public ArrayList<Object> interfaces=new ArrayList<Object>();
+	public Set<String> importList;
+	public Stack<String> classNames;
+	public String superclassname;
+	public ArrayList<Object> interfaces;
 	public int tolerance = 3;
 
 	public void printFields()
 	{
-		System.out.println("globalmethods"+methodReturnTypesMap);
-		System.out.println("globaltypes"+variableTypeMap);
-		System.out.println("printtypes"+printtypes);
-		System.out.println("printmethods"+printmethods);
-		System.out.println("printTypesMap"+printTypesMap);
-		System.out.println("printMethodsMap"+printMethodsMap);
-		System.out.println("possibleImportList"+importList);
+		System.out.println("methodReturnTypesMap: " + methodReturnTypesMap);
+		System.out.println("variableTypeMap: " + variableTypeMap);
+		System.out.println("printtypes: " + printtypes);
+		System.out.println("printmethods: " + printmethods);
+		System.out.println("printTypesMap: " + printTypesMap);
+		System.out.println("printMethodsMap: " + printMethodsMap);
+		System.out.println("possibleImportList: " + importList);
 	}
 
 	public SubsequentASTVisitor(FirstASTVisitor previousVisitor) 
@@ -76,9 +64,11 @@ class SubsequentASTVisitor extends ASTVisitor
 		printTypesMap = previousVisitor.printTypesMap;
 		printMethodsMap = previousVisitor.printMethodsMap;
 		importList = previousVisitor.importList;
-		classname = previousVisitor.classname;
+		classNames = previousVisitor.classNames;
 		superclassname = previousVisitor.superclassname;
 		interfaces = previousVisitor.interfaces;
+		methodContainerCache = previousVisitor.methodContainerCache;
+		methodReturnCache = previousVisitor.methodReturnCache;
 	}
 	
 	public SubsequentASTVisitor(SubsequentASTVisitor previousVisitor) 
@@ -93,9 +83,11 @@ class SubsequentASTVisitor extends ASTVisitor
 		printTypesMap = previousVisitor.printTypesMap;
 		printMethodsMap = previousVisitor.printMethodsMap;
 		importList = previousVisitor.importList;
-		classname = previousVisitor.classname;
+		classNames = previousVisitor.classNames;
 		superclassname = previousVisitor.superclassname;
 		interfaces = previousVisitor.interfaces;
+		methodContainerCache = previousVisitor.methodContainerCache;
+		methodReturnCache = previousVisitor.methodReturnCache;
 	}
 
 	private ArrayList<Integer> getScopeArray(ASTNode treeNode)
@@ -108,25 +100,6 @@ class SubsequentASTVisitor extends ASTVisitor
 			treeNode = parentNode;
 		}
 		return parentList;
-	}
-
-	public void endVisit(VariableDeclarationStatement treeNode)
-	{
-	}
-
-	public boolean visit(EnhancedForStatement treeNode)
-	{
-		return true;
-	}
-
-	public void endVisit(ForStatement node)
-	{
-		
-	}
-
-	public void endVisit(FieldDeclaration treeNode) 
-	{
-		
 	}
 
 	public boolean isLocalMethod(String methodName)
@@ -176,8 +149,8 @@ class SubsequentASTVisitor extends ASTVisitor
 			for(Node method : currentMethods)
 			{
 				System.out.println("here--");
-				Node returnNode = model.getMethodReturn(method);
-				Node parentNode = model.getMethodContainer(method);
+				Node returnNode = model.getMethodReturn(method, methodReturnCache);
+				Node parentNode = model.getMethodContainer(method, methodContainerCache);
 				if(candidateClassNodes.contains(parentNode) == true && candidateReturnNodes.contains(returnNode) == true)
 				{
 					System.out.println("here too -----");
@@ -215,8 +188,8 @@ class SubsequentASTVisitor extends ASTVisitor
 			for(Node method : currentMethods)
 			{
 				System.out.println("here -- ");
-				Node returnNode = model.getMethodReturn(method);
-				Node parentNode = model.getMethodContainer(method);
+				Node returnNode = model.getMethodReturn(method, methodReturnCache);
+				Node parentNode = model.getMethodContainer(method, methodContainerCache);
 				if(candidateClassNodes.contains(parentNode) == true && candidateReturnNodes.contains(returnNode) == true)
 				{
 					System.out.println("-- here too");
@@ -256,16 +229,6 @@ class SubsequentASTVisitor extends ASTVisitor
 			return false;
 	}
 
-	public boolean visit(TypeDeclaration treeNode)
-	{
-		return true;
-	}
-
-	public boolean visit(MethodDeclaration treeNode)
-	{
-		return true;
-	}
-
 	public void endVisit(ConstructorInvocation treeNode)
 	{	
 		String treeNodeString = treeNode.toString();
@@ -280,7 +243,7 @@ class SubsequentASTVisitor extends ASTVisitor
 		
 		for(Node method : currentMethods)
 		{
-			Node returnNode = model.getMethodReturn(method);
+			Node returnNode = model.getMethodReturn(method, methodReturnCache);
 			if(candidateReturnNodes.contains(returnNode) == true)
 			{
 				newMethodNodes.add(method);
@@ -288,11 +251,6 @@ class SubsequentASTVisitor extends ASTVisitor
 		}
 		printmethods.removeAll(startPosition);
 		printmethods.putAll(startPosition, newMethodNodes);
-	}
-
-	public boolean visit(CatchClause node)
-	{
-		return true;
 	}
 
 	public void endVisit(SuperConstructorInvocation treeNode)
@@ -309,7 +267,7 @@ class SubsequentASTVisitor extends ASTVisitor
 		
 		for(Node method : currentMethods)
 		{
-			Node returnNode = model.getMethodReturn(method);
+			Node returnNode = model.getMethodReturn(method, methodReturnCache);
 			if(candidateReturnNodes.contains(returnNode) == true)
 			{
 				newMethodNodes.add(method);
@@ -333,7 +291,7 @@ class SubsequentASTVisitor extends ASTVisitor
 		
 		for(Node method : currentMethods)
 		{
-			Node returnNode = model.getMethodReturn(method);
+			Node returnNode = model.getMethodReturn(method, methodReturnCache);
 			if(candidateReturnNodes.contains(returnNode) == true)
 			{
 				newMethodNodes.add(method);
@@ -341,25 +299,6 @@ class SubsequentASTVisitor extends ASTVisitor
 		}
 		printmethods.removeAll(startPosition);
 		printmethods.putAll(startPosition, newMethodNodes);
-	}
-
-	public boolean visit(final ClassInstanceCreation treeNode)
-	{
-		return true;
-	}
-
-
-	public boolean visit(CastExpression node)
-	{
-		return true;
-	}
-
-	public void endVisit(Assignment node)
-	{}
-
-	public boolean visit(ImportDeclaration node)
-	{
-		return true;
 	}
 
 	public JSONObject printJson()
