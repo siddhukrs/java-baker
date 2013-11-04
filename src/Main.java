@@ -40,18 +40,50 @@ public class Main
 	public static void main(String args[]) throws IOException, NullPointerException, ClassNotFoundException, DocumentException, ParseException, SQLException
 	{
 		long start = System.nanoTime();
+		
 		String input_oracle = "/home/s23subra/workspace/model-generator/maven-graph-database/";
-
-		String input_snippet="sample.txt";
-		Parser parser=new Parser(input_oracle);
+		String input_snippet = "sample.txt";
+		Parser parser = new Parser(input_oracle);
 		parser.setInputFile(input_snippet);
-		CompilationUnit cu=parser.getCompilationUnitFromFile();
+		CompilationUnit cu = parser.getCompilationUnitFromFile();
 		int cutype=parser.getCuType();
 		GraphDatabase db = parser.getGraph();
-		revisedASTVisitor visitor=new revisedASTVisitor(db,cu,cutype);
-		cu.accept(visitor);
-		System.out.println(visitor.printJson().toString(3));
-		visitor.printFields();
+		
+		FirstASTVisitor visitor1 = new FirstASTVisitor(db,cu,cutype);
+		cu.accept(visitor1);
+		System.out.println(visitor1.printJson().toString(3));
+		visitor1.printFields();
+		
+		SubsequentASTVisitor visitor2 = new SubsequentASTVisitor(visitor1);
+		cu.accept(visitor2);
+		System.out.println(visitor2.printJson().toString(3));
+		visitor2.printFields();
+		
+		SubsequentASTVisitor visitor3 = new SubsequentASTVisitor(visitor2);
+		cu.accept(visitor3);
+		System.out.println(visitor3.printJson().toString(3));
+		visitor3.printFields();
+		
+		SubsequentASTVisitor prev = visitor2;
+		SubsequentASTVisitor curr = visitor3;
+		
+		while(compareMaps(curr, prev) == false)
+		{
+			SubsequentASTVisitor visitor4 = new SubsequentASTVisitor(curr);
+			cu.accept(visitor4);
+			System.out.println(visitor4.printJson().toString(3));
+			visitor4.printFields();
+			prev = curr;
+			curr = visitor4;
+			
+		}
+		
+		
+		
+		
+		
+		
+		
 		long end = System.nanoTime();
 		System.out.println("Total Time" + " - " + String.valueOf((double)(end-start)/(1000000000)));
 		/*Parser parser=new Parser(input_oracle);
@@ -59,6 +91,25 @@ public class Main
 		Element root = getCodeXML("/home/s23subra/workspace/stackoverflow/java_codes_tags.xml");
 		iterate(root, connection, parser);*/
 	}
+	
+	
+	
+
+	private static boolean compareMaps(SubsequentASTVisitor curr, SubsequentASTVisitor prev) 
+	{
+		if(curr.variableTypeMap.equals(prev.variableTypeMap) && 
+				curr.methodReturnTypesMap.equals(prev.methodReturnTypesMap) &&
+				curr.printtypes.equals(prev.printtypes) &&
+				curr.printmethods.equals(prev.printmethods) &&
+				curr.printTypesMap.equals(prev.printTypesMap) &&
+				curr.printMethodsMap.equals(prev.printMethodsMap))
+			return true;
+		else
+			return false;
+	}
+
+
+
 
 	public static void iterate(Element root, Connection connection, Parser parser) throws NullPointerException, IOException, ClassNotFoundException, ParseException, SQLException  
 	{

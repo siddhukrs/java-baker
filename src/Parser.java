@@ -75,7 +75,7 @@ class Parser{
 		DataInputStream in = new DataInputStream(fis);
 		BufferedReader br = new BufferedReader(new InputStreamReader(in));
 		String strLine;
-		String code = null;
+		String code = new String();
 		while ((strLine = br.readLine()) != null) {
 			code = code + strLine + "\n";
 		}
