@@ -299,6 +299,7 @@ class SubsequentASTVisitor extends ASTVisitor
 		}
 		printmethods.removeAll(startPosition);
 		printmethods.putAll(startPosition, newMethodNodes);
+		//blah
 	}
 
 	public JSONObject printJson()
