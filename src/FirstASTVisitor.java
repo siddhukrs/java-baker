@@ -446,9 +446,11 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 				{
 					//ArrayList<Node> candidateSuperClassMethods = model.getMethodNodes(candidateSuperClass, methodNodesInClassNode);
 					IndexHits<Node> candidateSuperClassMethods = model.getMethodNodesInClassNode(candidateSuperClass, treeNodeMethodExactName);
+					
 					for(Node candidateSuperClassMethod : candidateSuperClassMethods)
 					{
-						String candidateMethodExactName = (String)candidateSuperClassMethod.getProperty("exactName"); 
+						
+						String candidateMethodExactName = (String)candidateSuperClassMethod.getProperty("exactName");
 						if(candidateMethodExactName.equals(treeNodeMethodExactName))
 						{
 							if(matchParams(candidateSuperClassMethod, treeNode.arguments())==true)
@@ -559,6 +561,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 				int hasCandidateFlag = 0;
 				for(Node candidateMethodNode : candidateMethodNodes)
 				{
+					System.out.println(candidateMethodNode.getProperty("id") + " " + candidateClassNode.getProperty("id") + " " + treeNodeMethodExactName);
 					String candidateMethodExactName = (String)candidateMethodNode.getProperty("exactName");
 					if((candidateMethodExactName).equals(treeNodeMethodExactName))
 					{
@@ -949,7 +952,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		long end = System.nanoTime();
 		System.out.println(model.getCurrentMethodName() + " - " + me.getProperty("id") + " : " + String.valueOf((double)(end-start)/1000000000));
 		return true;
-	}
+		}
 
 	public boolean visit(TypeDeclaration treeNode)
 	{
