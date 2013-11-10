@@ -313,7 +313,6 @@ class SubsequentASTVisitor extends ASTVisitor
 		String[] primitive={};
 		JSONObject main_json=new JSONObject();
 
-		//Collections.sort(printtypes, printtypes.keySet());
 		for(Integer key:printtypes.keySet())
 		{
 			int flag=0;

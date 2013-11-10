@@ -49,7 +49,7 @@ public class Main
 		int cutype = parser.getCuType();
 		GraphDatabase db = parser.getGraph();
 		
-		System.out.println(vistAST(db, cu, cutype));
+		System.out.println(vistAST(db, cu, cutype).toString(3));
 
 
 
