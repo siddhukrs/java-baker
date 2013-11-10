@@ -127,14 +127,14 @@ class SubsequentASTVisitor extends ASTVisitor
 		}
 		else if(variableTypeMap.containsKey(expression.toString()))
 		{
-			System.out.println("-- here " + startPosition);
+			//System.out.println("-- here " + startPosition);
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap1 = variableTypeMap.get(expression.toString());
 			ArrayList<Integer> rightScopeArray1 = getNodeSet(temporaryMap1, scopeArray);
 			if(rightScopeArray1 == null)
 				return;
-			System.out.println(treeNodeString + rightScopeArray1);
+			//System.out.println(treeNodeString + rightScopeArray1);
 			Set<Node> candidateClassNodes = temporaryMap1.get(rightScopeArray1);
-			System.out.println("candidateClassNodes "+candidateClassNodes);
+			//System.out.println("candidateClassNodes "+candidateClassNodes);
 			
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap2 = methodReturnTypesMap.get(treeNodeString);
 			ArrayList<Integer> rightScopeArray2 = getNodeSet(temporaryMap2, scopeArray);
@@ -148,12 +148,12 @@ class SubsequentASTVisitor extends ASTVisitor
 			Set<Node> newClassNodes = new HashSet<Node>();
 			for(Node method : currentMethods)
 			{
-				System.out.println("here--");
+				//System.out.println("here--");
 				Node returnNode = model.getMethodReturn(method, methodReturnCache);
 				Node parentNode = model.getMethodContainer(method, methodContainerCache);
 				if(candidateClassNodes.contains(parentNode) == true && candidateReturnNodes.contains(returnNode) == true)
 				{
-					System.out.println("here too -----");
+					//System.out.println("here too -----");
 					newMethodNodes.add(method);
 					newReturnNodes.add(returnNode);
 					newClassNodes.add(parentNode);
@@ -168,7 +168,7 @@ class SubsequentASTVisitor extends ASTVisitor
 		}
 		else if(methodReturnTypesMap.containsKey(expression.toString()))
 		{
-			System.out.println("-- here");
+			//System.out.println("-- here");
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap1 = methodReturnTypesMap.get(expression.toString());
 			ArrayList<Integer> rightScopeArray1 = getNodeSet(temporaryMap1, scopeArray);
 			Set<Node> candidateClassNodes = temporaryMap1.get(rightScopeArray1);
@@ -178,21 +178,21 @@ class SubsequentASTVisitor extends ASTVisitor
 			if(rightScopeArray2 == null)
 				return;
 			Set<Node> candidateReturnNodes = temporaryMap2.get(rightScopeArray2);
-			System.out.println("candidateReturnNodes " + scopeArray + candidateReturnNodes);
+			//System.out.println("candidateReturnNodes " + scopeArray + candidateReturnNodes);
 			Set<Node> currentMethods = printmethods.get(startPosition);
-			System.out.println("currentMethods " + currentMethods);
+			//System.out.println("currentMethods " + currentMethods);
 			Set<Node> newMethodNodes = new HashSet<Node>();
 			Set<Node> newReturnNodes = new HashSet<Node>();
 			Set<Node> newClassNodes = new HashSet<Node>();
 			
 			for(Node method : currentMethods)
 			{
-				System.out.println("here -- ");
+				//System.out.println("here -- ");
 				Node returnNode = model.getMethodReturn(method, methodReturnCache);
 				Node parentNode = model.getMethodContainer(method, methodContainerCache);
 				if(candidateClassNodes.contains(parentNode) == true && candidateReturnNodes.contains(returnNode) == true)
 				{
-					System.out.println("-- here too");
+					//System.out.println("-- here too");
 					newMethodNodes.add(method);
 					newReturnNodes.add(returnNode);
 					newClassNodes.add(parentNode);
@@ -206,7 +206,7 @@ class SubsequentASTVisitor extends ASTVisitor
 			temporaryMap2.putAll(rightScopeArray2, newReturnNodes);
 		}
 		long end = System.nanoTime();
-		System.out.println(model.getCurrentMethodName() + " - " + treeNode.toString() + " : " + String.valueOf((double)(end-start)/1000000000));
+		//System.out.println(model.getCurrentMethodName() + " - " + treeNode.toString() + " : " + String.valueOf((double)(end-start)/1000000000));
 	}
 
 	private ArrayList<Integer> getNodeSet(HashMultimap<ArrayList<Integer>, Node> celist2, ArrayList<Integer> scopeArray) 
@@ -282,7 +282,7 @@ class SubsequentASTVisitor extends ASTVisitor
 		String treeNodeString = treeNode.toString();
 		int startPosition = treeNode.getStartPosition();
 		ArrayList<Integer> scopeArray = getScopeArray(treeNode);
-		System.out.println(treeNodeString);
+		//System.out.println(treeNodeString);
 		if(methodReturnTypesMap.containsKey(treeNodeString))
 		{
 			Set<Node> candidateReturnNodes = methodReturnTypesMap.get(treeNodeString).get(scopeArray);
@@ -376,20 +376,15 @@ class SubsequentASTVisitor extends ASTVisitor
 				json.accumulate("character", Integer.toString(key));
 				main_json.accumulate("api_elements", json);
 			}
-			//System.out.println(main_json.toString());
 		}
 		if(main_json.isNull("api_elements"))
 		{
-			//System.out.println("{\"api_elements\": [{ \"precision\": \"\",\"name\": \"\",\"line_number\": \"\",\"type\": \"\",\"elements\": \"\"}]}" ); 
-			//return("{\"api_elements\": [{ \"precision\": \"\",\"name\": \"\",\"line_number\": \"\",\"type\": \"\",\"elements\": \"\"}]}" );
 			return null;
 		}
 		else
 		{
-			//System.out.println(main_json.toString(3));
 			return(main_json);
 		}
-		//printFields();
 	}
 
 	public void checkForNull()

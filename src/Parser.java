@@ -26,11 +26,11 @@ class Parser{
 	
 	public Parser(String oracle, String input_file_path) throws IOException 
 	{
-		//String path = getPath();
-		//this.input_snippet = path + File.separator + input;
+		String path = getPath();
+		this.input_file = path + File.separator + input_file_path;
 		//this.input_oracle = path + File.separator + oracle;
 		this.input_oracle = oracle;
-		setInputFile(input_file_path);
+		//setInputFile(input_file_path);
 	}
 
 	private void setInputFile(String input) throws IOException

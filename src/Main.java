@@ -48,8 +48,8 @@ public class Main
 		CompilationUnit cu = parser.getCompilationUnitFromFile();
 		int cutype = parser.getCuType();
 		GraphDatabase db = parser.getGraph();
-
-		vistAST(db, cu, cutype);
+		
+		System.out.println(vistAST(db, cu, cutype));
 
 
 
@@ -57,26 +57,26 @@ public class Main
 		Element root = getCodeXML("/home/s23subra/workspace/stackoverflow/java_codes_tags.xml");
 		iterateOver(root, connection, parser);*/
 		long end = System.nanoTime();
-		System.out.println("Total Time" + " - " + String.valueOf((double)(end-start)/(1000000000)));
+		//System.out.println("Total Time" + " - " + String.valueOf((double)(end-start)/(1000000000)));
 	}
 
 
 	private static JSONObject vistAST(GraphDatabase db, CompilationUnit cu, int cutype)
 	{
-		System.out.println("start");
+		//System.out.println("start");
 		FirstASTVisitor first_visitor = new FirstASTVisitor(db,cu,cutype);
 		cu.accept(first_visitor);
-		System.out.println(first_visitor.printJson().toString(3));
+		//System.out.println(first_visitor.printJson().toString(3));
 		first_visitor.printFields();
 
 		SubsequentASTVisitor second_visitor = new SubsequentASTVisitor(first_visitor);
 		cu.accept(second_visitor);
-		System.out.println(second_visitor.printJson().toString(3));
+		//System.out.println(second_visitor.printJson().toString(3));
 		second_visitor.printFields();
 
 		SubsequentASTVisitor third_visitor = new SubsequentASTVisitor(second_visitor);
 		cu.accept(third_visitor);
-		System.out.println(third_visitor.printJson().toString(3));
+		//System.out.println(third_visitor.printJson().toString(3));
 		third_visitor.printFields();
 
 		SubsequentASTVisitor previous_visitor = second_visitor;
@@ -86,13 +86,13 @@ public class Main
 		{
 			SubsequentASTVisitor new_visitor = new SubsequentASTVisitor(current_visitor);
 			cu.accept(new_visitor);
-			System.out.println(new_visitor.printJson().toString(3));
+			//System.out.println(new_visitor.printJson().toString(3));
 			new_visitor.printFields();
 			previous_visitor = current_visitor;
 			current_visitor = new_visitor;
 		}
 
-		System.out.println("end" + current_visitor.printJson().toString());
+		//System.out.println("end" + current_visitor.printJson().toString());
 		return current_visitor.printJson();
 	}
 

@@ -99,7 +99,7 @@ class FirstASTVisitor extends ASTVisitor
 							String className = treeNode.getType().toString();
 							String methodName = methodNode.getName().toString();
 							localMethods.put(methodName, className);
-							System.out.println("-- -- " + className + "  :  " + methodName);
+							//System.out.println("-- -- " + className + "  :  " + methodName);
 						}
 					});
 				}
@@ -114,7 +114,7 @@ class FirstASTVisitor extends ASTVisitor
 			public boolean visit(MethodDeclaration treeNode)
 			{
 				String methodName = treeNode.getName().toString();
-				System.out.println("-- -- " + classNames.peek() + "  :  " + methodName);
+				//System.out.println("-- -- " + classNames.peek() + "  :  " + methodName);
 				localMethods.put(methodName, classNames.peek());
 				return true;
 			}
@@ -216,8 +216,8 @@ class FirstASTVisitor extends ASTVisitor
 			//do not include parenthesised type nodes in the list.
 			if(parentNode.getNodeType() != 36)
 				parentList.add(parentNode.getStartPosition());
-			else
-				System.out.println("paranthesised");
+			/*else
+				System.out.println("paranthesised");*/
 			treeNode = parentNode;
 		}
 		return parentList;
@@ -229,7 +229,7 @@ class FirstASTVisitor extends ASTVisitor
 		String treeNodeType = treeNode.getType().toString();
 		if(treeNode.getType().getNodeType() == 74)
 			treeNodeType = ((ParameterizedType)treeNode.getType()).getType().toString();
-		System.out.println(" +++ "+treeNode.getType().getNodeType() + " : " + treeNodeType);
+		//System.out.println(" +++ "+treeNode.getType().getNodeType() + " : " + treeNodeType);
 		
 		for(int j=0; j < treeNode.fragments().size(); j++)
 		{
@@ -377,7 +377,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		{
 			if(localMethods.containsKey(methodName))
 			{
-				System.out.println("1");
+				//System.out.println("1");
 				if(localMethods.get(methodName).contains(classNames.peek()))
 					return true;
 			}
@@ -386,7 +386,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		{
 			if(localMethods.containsKey(methodName))
 			{
-				System.out.println("2");
+				//System.out.println("2");
 				if(expression.toString().equals("this"))
 					return true;
 			}
@@ -407,7 +407,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		
 		if(isLocalMethod(treeNodeMethodExactName, expression) == true)
 		{
-			System.out.println("local method: " + treeNodeMethodExactName + " - ");
+			//System.out.println("local method: " + treeNodeMethodExactName + " - ");
 			return;
 		}
 		
@@ -418,7 +418,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 			{
 				
 				expressionString = expressionString.substring(1, expressionString.length()-1);
-				System.out.println(expressionString + " !!!!!");
+				//System.out.println(expressionString + " !!!!!");
 			}
 		}
 		
@@ -534,11 +534,11 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 			printMethodsMap.put(treeNodeString, startPosition);
 
 			ArrayList<Node> replacementClassNodesList = new ArrayList<Node>();
-			System.out.println(treeNodeString + "!!");
+			//System.out.println(treeNodeString + "!!");
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap = variableTypeMap.get(expressionString);
 			ArrayList<Integer> rightScopeArray = getNodeSet(temporaryMap, scopeArray);
-			System.out.println(temporaryMap);
-			System.out.println(scopeArray);
+			//System.out.println(temporaryMap);
+			//System.out.println(scopeArray);
 			if(rightScopeArray == null)
 				return;
 
@@ -561,7 +561,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 				int hasCandidateFlag = 0;
 				for(Node candidateMethodNode : candidateMethodNodes)
 				{
-					System.out.println(candidateMethodNode.getProperty("id") + " " + candidateClassNode.getProperty("id") + " " + treeNodeMethodExactName);
+					//System.out.println(candidateMethodNode.getProperty("id") + " " + candidateClassNode.getProperty("id") + " " + treeNodeMethodExactName);
 					String candidateMethodExactName = (String)candidateMethodNode.getProperty("exactName");
 					if((candidateMethodExactName).equals(treeNodeMethodExactName))
 					{
@@ -671,13 +671,13 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		}
 		else if(methodReturnTypesMap.containsKey(expressionString))
 		{
-			System.out.println("here now");
+			//System.out.println("here now");
 			printTypesMap.put(treeNodeString, startPosition);
 			printMethodsMap.put(treeNodeString, startPosition);
 
 			HashMultimap<ArrayList<Integer>, Node> nodeInMap = methodReturnTypesMap.get(expressionString);
-			System.out.println(nodeInMap);
-			System.out.println(scopeArray);
+			//System.out.println(nodeInMap);
+			//System.out.println(scopeArray);
 			HashMultimap<ArrayList<Integer>, Node> candidateAccumulator = null;
 			if(methodReturnTypesMap.containsKey(treeNodeString))
 			{
@@ -691,10 +691,10 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 
 			ArrayList<Integer> newscopeArray = getNodeSet(nodeInMap, scopeArray);
 			Set<Node> candidateClassNodes = nodeInMap.get(newscopeArray);
-			System.out.println(expressionString + " " + treeNodeString +" : "+candidateClassNodes);
+			//System.out.println(expressionString + " " + treeNodeString +" : "+candidateClassNodes);
 			for(Node candidateClassNode : candidateClassNodes)
 			{
-				System.out.println(candidateClassNode.getProperty("id"));
+				//System.out.println(candidateClassNode.getProperty("id"));
 				String candidateClassExactName = (String) candidateClassNode.getProperty("exactName");
 				//ArrayList<Node> candidateMethodNodes = model.getMethodNodes(candidateClassNode, methodNodesInClassNode);
 				IndexHits<Node> candidateMethodNodes = model.getMethodNodesInClassNode(candidateClassNode, treeNodeMethodExactName);
@@ -705,7 +705,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 					{	
 						if(matchParams(candidateMethodNode, treeNode.arguments())==true)
 						{
-							System.out.println(treeNode.getName() + " : " + candidateMethodNode.getProperty("id"));
+							//System.out.println(treeNode.getName() + " : " + candidateMethodNode.getProperty("id"));
 							printmethods.put(startPosition, candidateMethodNode);
 							Node fcname=model.getMethodContainer(candidateMethodNode,methodContainerCache);
 							if(fcname!=null && ((String)fcname.getProperty("exactName")).equals(candidateClassExactName)==true)
@@ -782,7 +782,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 			}
 		}
 		long end = System.nanoTime();
-		System.out.println(model.getCurrentMethodName() + " - " + treeNode.toString() + " : " + String.valueOf((double)(end-start)/1000000000));
+		//System.out.println(model.getCurrentMethodName() + " - " + treeNode.toString() + " : " + String.valueOf((double)(end-start)/1000000000));
 	}
 
 	private ArrayList<Integer> getNodeSet(HashMultimap<ArrayList<Integer>, Node> celist2, ArrayList<Integer> scopeArray) 
@@ -950,7 +950,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		}
 		//System.out.println("MATCH : "+me.getProperty("id"));
 		long end = System.nanoTime();
-		System.out.println(model.getCurrentMethodName() + " - " + me.getProperty("id") + " : " + String.valueOf((double)(end-start)/1000000000));
+		//System.out.println(model.getCurrentMethodName() + " - " + me.getProperty("id") + " : " + String.valueOf((double)(end-start)/1000000000));
 		return true;
 		}
 
@@ -1094,7 +1094,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 
 	public void endVisit(ConstructorInvocation treeNode)
 	{	
-		System.out.println("here constructr");
+		//System.out.println("here constructr");
 		String treeNodeString = treeNode.toString();
 		ArrayList<Integer> scopeArray = getScopeArray(treeNode);
 		HashMultimap<ArrayList<Integer>, Node> candidateAccumulator = null;
@@ -1158,7 +1158,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		{
 			temporaryMap = HashMultimap.create();
 		}
-		System.out.println("catch inv 1");
+		//System.out.println("catch inv 1");
 		ArrayList<Node> candidateClassNodes = model.getCandidateClassNodes(node.getException().getType().toString(), candidateClassNodesCache);
 		candidateClassNodes = getNewCeList(candidateClassNodes);
 		for(Node candidateClassNode : candidateClassNodes)
@@ -1274,7 +1274,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 					}
 				}
 			}
-			System.out.println(treeNodeString + " : " + candidateAccumulator);
+			//System.out.println(treeNodeString + " : " + candidateAccumulator);
 			methodReturnTypesMap.put(treeNodeString, candidateAccumulator);
 
 			if(clist.isEmpty()==false)
@@ -1346,7 +1346,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		
 		for(Node candidateClassNode : candidateClassNodes)
 		{
-			System.out.println("yes: "+candidateClassNode.getProperty("id"));
+			//System.out.println("yes: "+candidateClassNode.getProperty("id"));
 			//Collection<Node> candidateMethodNodes = model.getMethodNodes(candidateClassNode, methodNodesInClassNode);
 			IndexHits<Node> candidateMethodNodes = model.getMethodNodesInClassNode(candidateClassNode, "<init>");
 			for(Node candidateMethodNode : candidateMethodNodes)
@@ -1570,20 +1570,15 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 				json.accumulate("character", Integer.toString(key));
 				main_json.accumulate("api_elements", json);
 			}
-			//System.out.println(main_json.toString());
 		}
 		if(main_json.isNull("api_elements"))
 		{
-			//System.out.println("{\"api_elements\": [{ \"precision\": \"\",\"name\": \"\",\"line_number\": \"\",\"type\": \"\",\"elements\": \"\"}]}" ); 
-			//return("{\"api_elements\": [{ \"precision\": \"\",\"name\": \"\",\"line_number\": \"\",\"type\": \"\",\"elements\": \"\"}]}" );
 			return null;
 		}
 		else
 		{
-			//System.out.println(main_json.toString(3));
 			return(main_json);
 		}
-		//printFields();
 	}
 
 	public void checkForNull()
