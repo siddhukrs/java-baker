@@ -55,9 +55,9 @@ public class Main
 
 /*		Connection connection = getDatabase("/home/s23subra/workspace/Java Snippet Parser/javadb.db");
 		Element root = getCodeXML("/home/s23subra/workspace/stackoverflow/java_codes_tags.xml");
-		iterateOver(root, connection, parser);
+		iterateOver(root, connection, parser);*/
 		long end = System.nanoTime();
-		System.out.println("Total Time" + " - " + String.valueOf((double)(end-start)/(1000000000)));*/
+		System.out.println("Total Time" + " - " + String.valueOf((double)(end-start)/(1000000000)));
 	}
 
 

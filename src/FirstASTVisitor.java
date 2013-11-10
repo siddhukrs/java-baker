@@ -1274,6 +1274,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 					}
 				}
 			}
+			System.out.println(treeNodeString + " : " + candidateAccumulator);
 			methodReturnTypesMap.put(treeNodeString, candidateAccumulator);
 
 			if(clist.isEmpty()==false)

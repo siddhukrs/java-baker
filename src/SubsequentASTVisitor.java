@@ -282,24 +282,26 @@ class SubsequentASTVisitor extends ASTVisitor
 		String treeNodeString = treeNode.toString();
 		int startPosition = treeNode.getStartPosition();
 		ArrayList<Integer> scopeArray = getScopeArray(treeNode);
-		
-		Set<Node> candidateReturnNodes = methodReturnTypesMap.get(treeNodeString).get(scopeArray);
-		
-		Set<Node> currentMethods = printmethods.get(startPosition);
-		
-		Set<Node> newMethodNodes = new HashSet<Node>();
-		
-		for(Node method : currentMethods)
+		System.out.println(treeNodeString);
+		if(methodReturnTypesMap.containsKey(treeNodeString))
 		{
-			Node returnNode = model.getMethodReturn(method, methodReturnCache);
-			if(candidateReturnNodes.contains(returnNode) == true)
+			Set<Node> candidateReturnNodes = methodReturnTypesMap.get(treeNodeString).get(scopeArray);
+			
+			Set<Node> currentMethods = printmethods.get(startPosition);
+			
+			Set<Node> newMethodNodes = new HashSet<Node>();
+			
+			for(Node method : currentMethods)
 			{
-				newMethodNodes.add(method);
+				Node returnNode = model.getMethodReturn(method, methodReturnCache);
+				if(candidateReturnNodes.contains(returnNode) == true)
+				{
+					newMethodNodes.add(method);
+				}
 			}
+			printmethods.removeAll(startPosition);
+			printmethods.putAll(startPosition, newMethodNodes);
 		}
-		printmethods.removeAll(startPosition);
-		printmethods.putAll(startPosition, newMethodNodes);
-		//blah
 	}
 
 	public JSONObject printJson()
