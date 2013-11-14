@@ -41,7 +41,8 @@ class SubsequentASTVisitor extends ASTVisitor
 	public String superclassname;
 	public ArrayList<Object> interfaces;
 	public int tolerance = 3;
-
+	public int MAX_CARDINALITY = 20;
+	
 	public void printFields()
 	{
 		System.out.println("methodReturnTypesMap: " + methodReturnTypesMap);
@@ -341,7 +342,7 @@ class SubsequentASTVisitor extends ASTVisitor
 			int flag = 0;
 			String cname = null;
 			List<String> namelist = new ArrayList<String>();
-			if(printtypes.get(key).size() < 20)
+			if(printtypes.get(key).size() < MAX_CARDINALITY)
 			{
 				for(Node type_name:printtypes.get(key))
 				{
@@ -383,7 +384,7 @@ class SubsequentASTVisitor extends ASTVisitor
 		{
 			List<String> namelist = new ArrayList<String>();
 			String mname = null;
-			if(printmethods.get(key).size() < 20)
+			if(printmethods.get(key).size() < MAX_CARDINALITY)
 			{
 				for(Node method_name : printmethods.get(key))
 				{
