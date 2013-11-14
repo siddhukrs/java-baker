@@ -13,6 +13,8 @@ import org.dom4j.io.SAXReader;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.impl.transaction.LockException;
 
 
 
@@ -47,10 +49,11 @@ public class Main
 		//System.out.println(cu.toString());
 		int cutype = parser.getCuType();
 		GraphDatabase db = parser.getGraph();
-		
+		if(db == null)
+		{
+			System.out.println("db locked");
+		}
 		System.out.println(vistAST(db, cu, cutype).toString(3));
-
-
 
 /*		Connection connection = getDatabase("/home/s23subra/workspace/Java Snippet Parser/javadb.db");
 		Element root = getCodeXML("/home/s23subra/workspace/stackoverflow/java_codes_tags.xml");

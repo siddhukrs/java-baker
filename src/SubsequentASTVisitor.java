@@ -336,67 +336,72 @@ class SubsequentASTVisitor extends ASTVisitor
 		String[] primitive={};
 		JSONObject main_json=new JSONObject();
 
-		for(Integer key:printtypes.keySet())
+		for(Integer key : printtypes.keySet())
 		{
-			int flag=0;
-			String cname=null;
+			int flag = 0;
+			String cname = null;
 			List<String> namelist = new ArrayList<String>();
-			for(Node type_name:printtypes.get(key))
+			if(printtypes.get(key).size() < 20)
 			{
-				int isprimitive=0;
-				for(String primitive_type : primitive)
+				for(Node type_name:printtypes.get(key))
 				{
-					if(((String)type_name.getProperty("id")).equals(primitive_type)==true)
+					int isprimitive=0;
+					for(String primitive_type : primitive)
 					{
-						isprimitive=1;
-						break;
+						if(((String)type_name.getProperty("id")).equals(primitive_type) == true)
+						{
+							isprimitive = 1;
+							break;
+						}
 					}
+					if(isprimitive == 0)
+					{
+						String nameOfClass = (String)type_name.getProperty("id");
+						namelist.add("\""+nameOfClass+"\"");
+						if(flag == 0)
+						{
+							cname = (String) type_name.getProperty("exactName");
+							flag = 1;
+						}
+					}
+	
 				}
-				if(isprimitive==0)
+				if(namelist.isEmpty() == false)
 				{
-					String nameOfClass = (String)type_name.getProperty("id");
-					namelist.add("\""+nameOfClass+"\"");
-					if(flag==0)
-					{
-						cname=(String) type_name.getProperty("exactName");
-						flag=1;
-					}
+					JSONObject json = new JSONObject();
+					json.accumulate("line_number",Integer.toString(cu.getLineNumber(key)-cutype));
+					json.accumulate("precision", Integer.toString(namelist.size()));
+					json.accumulate("name",cname);
+					json.accumulate("elements",namelist);
+					json.accumulate("type","api_type");
+					json.accumulate("character", Integer.toString(key));
+					main_json.accumulate("api_elements", json);
 				}
-
 			}
-			if(namelist.isEmpty()==false)
-			{
-				JSONObject json = new JSONObject();
-				json.accumulate("line_number",Integer.toString(cu.getLineNumber(key)-cutype));
-				json.accumulate("precision", Integer.toString(namelist.size()));
-				json.accumulate("name",cname);
-				json.accumulate("elements",namelist);
-				json.accumulate("type","api_type");
-				json.accumulate("character", Integer.toString(key));
-				main_json.accumulate("api_elements", json);
-			}
-
 		}
 		for(Integer key:printmethods.keySet())
 		{
 			List<String> namelist = new ArrayList<String>();
-			String mname=null;
-			for(Node method_name:printmethods.get(key))
+			String mname = null;
+			if(printmethods.get(key).size() < 20)
 			{
-				String nameOfMethod = (String)method_name.getProperty("id");
-				namelist.add("\""+nameOfMethod+"\"");
-				mname=(String) method_name.getProperty("exactName");
-			}
-			if(namelist.isEmpty()==false)
-			{
-				JSONObject json = new JSONObject();
-				json.accumulate("line_number",Integer.toString(cu.getLineNumber(key)-cutype));
-				json.accumulate("precision", Integer.toString(namelist.size()));
-				json.accumulate("name",mname);
-				json.accumulate("elements",namelist);
-				json.accumulate("type","api_method");
-				json.accumulate("character", Integer.toString(key));
-				main_json.accumulate("api_elements", json);
+				for(Node method_name : printmethods.get(key))
+				{
+					String nameOfMethod = (String)method_name.getProperty("id");
+					namelist.add("\""+nameOfMethod+"\"");
+					mname=(String) method_name.getProperty("exactName");
+				}
+				if(namelist.isEmpty() == false)
+				{
+					JSONObject json = new JSONObject();
+					json.accumulate("line_number",Integer.toString(cu.getLineNumber(key)-cutype));
+					json.accumulate("precision", Integer.toString(namelist.size()));
+					json.accumulate("name",mname);
+					json.accumulate("elements",namelist);
+					json.accumulate("type","api_method");
+					json.accumulate("character", Integer.toString(key));
+					main_json.accumulate("api_elements", json);
+				}
 			}
 		}
 		if(main_json.isNull("api_elements"))

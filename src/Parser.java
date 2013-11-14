@@ -4,6 +4,7 @@ import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.neo4j.kernel.StoreLockException;
 
 import java.io.*;
 
@@ -54,8 +55,17 @@ class Parser{
 
 	public GraphDatabase getGraph()
 	{
-		GraphDatabase graphDb = new GraphDatabase(this.input_oracle);
-		return graphDb;
+		try
+		{
+			GraphDatabase graphDb = new GraphDatabase(this.input_oracle);
+			return graphDb;
+		}
+		catch(StoreLockException e)
+		{
+			System.out.println("Database Locked");
+			return null;
+		}
+		
 	}
 
 	private ASTParser getASTParser(String sourceCode) 
