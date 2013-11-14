@@ -1,3 +1,4 @@
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -177,7 +178,7 @@ class FirstASTVisitor extends ASTVisitor
 			}
 			if(flagVar1==1)
 				break;
-			else if(name.startsWith("java."))
+			/*else if(name.startsWith("java."))
 			{
 				if(flagVar2==0)
 				{
@@ -186,7 +187,7 @@ class FirstASTVisitor extends ASTVisitor
 				}
 				templist.add(ce);
 				flagVar3 = 1;
-			}
+			}*/
 			else
 			{
 				if(flagVar3 == 0)
@@ -424,7 +425,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		
 		if(expression==null)
 		{
-			if(superclassname!=null)
+			if(superclassname.isEmpty() == false)
 			{	
 				/*
 				 * Handles inheritance, where methods from Superclasses can be directly called
@@ -493,15 +494,16 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 				{
 					candidateAccumulator = HashMultimap.create();
 				}
-
 				ArrayList<Node> candidateMethodNodes = model.getCandidateMethodNodes(treeNode.getName().toString(), candidateMethodNodesCache);
 				for(Node candidateMethodNode : candidateMethodNodes)
 				{
 					if(matchParams(candidateMethodNode, treeNode.arguments())==true)
 					{
 						Node methodContainerClassNode = model.getMethodContainer(candidateMethodNode, methodContainerCache);
+						//System.out.println("++ " + methodContainerClassNode.getProperty("id") + " : " + candidateMethodNode.getProperty("id"));
 						if(candidateMethodNodes.size() < tolerance)
 						{
+							//System.out.println("yeah");
 							String possibleImport = getCorrespondingImport(methodContainerClassNode.getProperty("id").toString());
 							if(possibleImport!=null)
 							{
@@ -509,6 +511,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 							}
 						}
 						printtypes.put(startPosition, methodContainerClassNode);
+						//System.out.println(printtypes.get(startPosition) + Integer.toString(startPosition));
 						printmethods.put(startPosition, candidateMethodNode);
 						Node retElement = model.getMethodReturn(candidateMethodNode, methodReturnCache);
 						if(retElement!=null)
@@ -688,7 +691,6 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 				candidateAccumulator = HashMultimap.create();
 			}
 			ArrayList<Node> replacementClassNodesList = new ArrayList<Node>();
-
 			ArrayList<Integer> newscopeArray = getNodeSet(nodeInMap, scopeArray);
 			Set<Node> candidateClassNodes = nodeInMap.get(newscopeArray);
 			//System.out.println(expressionString + " " + treeNodeString +" : "+candidateClassNodes);
@@ -707,9 +709,12 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 						{
 							//System.out.println(treeNode.getName() + " : " + candidateMethodNode.getProperty("id"));
 							printmethods.put(startPosition, candidateMethodNode);
-							Node fcname=model.getMethodContainer(candidateMethodNode,methodContainerCache);
+							Node fcname = model.getMethodContainer(candidateMethodNode,methodContainerCache);
 							if(fcname!=null && ((String)fcname.getProperty("exactName")).equals(candidateClassExactName)==true)
+							{
+								//System.out.println("-- " + fcname.getProperty("id") + " : " + candidateMethodNode.getProperty("id"));
 								replacementClassNodesList.add(fcname);
+							}
 							Node retElement = model.getMethodReturn(candidateMethodNode, methodReturnCache);
 							if(retElement!=null)
 							{
@@ -728,15 +733,12 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 				HashMultimap<ArrayList<Integer>, Node> replacer = HashMultimap.create();
 				replacer.putAll(newscopeArray, replacementClassNodesList);
 				methodReturnTypesMap.put(expressionString, replacer);
-				if(printTypesMap.containsKey(expressionString)==false)
-				{
-					printTypesMap.put(expressionString, startPosition);
-				}
-				printtypes.replaceValues(treeNode.getExpression().getStartPosition(), replacementClassNodesList);
+				
 			}
 		}
 		else
 		{
+			
 			ArrayList <Node> replacementClassNodesList= new ArrayList<Node>();
 			HashMultimap<ArrayList<Integer>, Node> candidateAccumulator = null;
 			if(methodReturnTypesMap.containsKey(treeNodeString))
@@ -1573,7 +1575,17 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		}
 		if(main_json.isNull("api_elements"))
 		{
-			return null;
+			String emptyJSON = "{\"api_elements\": [{ \"precision\": \"\",\"name\": \"\",\"line_number\": \"\",\"type\": \"\",\"elements\": \"\"}]}" ;
+			JSONObject ret = new JSONObject();
+			try 
+			{
+				ret = new JSONObject(emptyJSON);
+			} 
+			catch (ParseException e) 
+			{
+				e.printStackTrace();
+			}
+			return(ret);
 		}
 		else
 		{

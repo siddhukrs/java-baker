@@ -13,7 +13,6 @@ import org.dom4j.io.SAXReader;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.neo4j.graphdb.Transaction;
 
 
 
@@ -21,7 +20,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.TreeSet;
@@ -38,7 +36,7 @@ public class Main
 {
 
 
-	public static void main(String args[]) throws IOException, NullPointerException, ClassNotFoundException, DocumentException, ParseException, SQLException, TimeoutException
+	public static void main(String args[]) throws IOException, NullPointerException, ClassNotFoundException, DocumentException, SQLException, TimeoutException
 	{
 		long start = System.nanoTime();
 
@@ -49,7 +47,6 @@ public class Main
 		//System.out.println(cu.toString());
 		int cutype = parser.getCuType();
 		GraphDatabase db = parser.getGraph();
-		
 		
 		System.out.println(vistAST(db, cu, cutype).toString(3));
 
@@ -96,6 +93,7 @@ public class Main
 		}
 
 		//System.out.println("end" + current_visitor.printJson().toString());
+		//current_visitor.printFields();
 		return current_visitor.printJson();
 	}
 
@@ -127,7 +125,7 @@ public class Main
 			}
 		} );
 	}
-	public static void iterateOver(Element root, Connection connection, Parser parser) throws NullPointerException, IOException, ClassNotFoundException, ParseException, SQLException, TimeoutException
+	public static void iterateOver(Element root, Connection connection, Parser parser) throws NullPointerException, IOException, ClassNotFoundException, SQLException, TimeoutException
 	{
 
 		int finished = 0;
@@ -222,7 +220,7 @@ public class Main
 		}
 	}
 
-	public static void iterate(Element root, Connection connection, Parser parser) throws NullPointerException, IOException, ClassNotFoundException, ParseException, SQLException  
+	public static void iterate(Element root, Connection connection, Parser parser) throws NullPointerException, IOException, ClassNotFoundException, SQLException  
 	{
 		TreeSet<String> lru = new TreeSet<String>();
 

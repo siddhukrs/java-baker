@@ -1,3 +1,4 @@
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -116,7 +117,29 @@ class SubsequentASTVisitor extends ASTVisitor
 		int startPosition = treeNode.getName().getStartPosition();
 		if(expression==null)
 		{
+			HashMultimap<ArrayList<Integer>, Node> temporaryMap2 = methodReturnTypesMap.get(treeNodeString);
+			ArrayList<Integer> rightScopeArray2 = getNodeSet(temporaryMap2, scopeArray);
+			if(rightScopeArray2 == null)
+				return;
+			Set<Node> candidateReturnNodes = temporaryMap2.get(rightScopeArray2);
+			Set<Node> currentMethods = printmethods.get(startPosition);
 			
+			Set<Node> newMethodNodes = new HashSet<Node>();
+			Set<Node> newReturnNodes = new HashSet<Node>();
+			for(Node method : currentMethods)
+			{
+				Node returnNode = model.getMethodReturn(method, methodReturnCache);
+				if(candidateReturnNodes.contains(returnNode) == true)
+				{
+					//System.out.println(method.getProperty("id") + " : " + returnNode.getProperty("id"));
+					newMethodNodes.add(method);
+					newReturnNodes.add(returnNode);
+				}
+			}
+			printmethods.removeAll(startPosition);
+			printmethods.putAll(startPosition, newMethodNodes);
+			temporaryMap2.removeAll(rightScopeArray2);
+			temporaryMap2.putAll(rightScopeArray2, newReturnNodes);
 		}
 		else if(expression.toString().contains("System."))
 		{
@@ -378,7 +401,17 @@ class SubsequentASTVisitor extends ASTVisitor
 		}
 		if(main_json.isNull("api_elements"))
 		{
-			return null;
+			String emptyJSON = "{\"api_elements\": [{ \"precision\": \"\",\"name\": \"\",\"line_number\": \"\",\"type\": \"\",\"elements\": \"\"}]}" ;
+			JSONObject ret = new JSONObject();
+			try 
+			{
+				ret = new JSONObject(emptyJSON);
+			} 
+			catch (ParseException e) 
+			{
+				e.printStackTrace();
+			}
+			return(ret);
 		}
 		else
 		{
