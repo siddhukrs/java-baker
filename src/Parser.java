@@ -52,17 +52,9 @@ class Parser{
 		return path;
 	}
 
-	public ImpreciseModel getModel() 
-	{
-		Model2XMLReader xmlrdf = new Model2XMLReader(this.input_oracle);
-		Model knownModel = xmlrdf.read();
-		ImpreciseModel model = new ImpreciseModel(knownModel);
-		return model;
-	}
-
 	public GraphDatabase getGraph()
 	{
-		GraphDatabase graphDb = new GraphDatabase(input_oracle);
+		GraphDatabase graphDb = new GraphDatabase(this.input_oracle);
 		return graphDb;
 	}
 
@@ -98,6 +90,7 @@ class Parser{
 	NullPointerException, ClassNotFoundException 
 	{
 		String code = getCodefromSnippet();
+		System.out.println(code);
 		ASTParser parser = getASTParser(code);
 		ASTNode cu = (CompilationUnit) parser.createAST(null);
 		cutype = 0;
