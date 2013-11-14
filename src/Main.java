@@ -46,7 +46,7 @@ public class Main
 		String input_file = "sample.txt";
 		Parser parser = new Parser(input_oracle, input_file);
 		CompilationUnit cu = parser.getCompilationUnitFromFile();
-		System.out.println(cu.toString());
+		//System.out.println(cu.toString());
 		int cutype = parser.getCuType();
 		GraphDatabase db = parser.getGraph();
 		
@@ -59,7 +59,7 @@ public class Main
 		Element root = getCodeXML("/home/s23subra/workspace/stackoverflow/java_codes_tags.xml");
 		iterateOver(root, connection, parser);*/
 		long end = System.nanoTime();
-		System.out.println("Total Time" + " - " + String.valueOf((double)(end-start)/(1000000000)));
+		//System.out.println("Total Time" + " - " + String.valueOf((double)(end-start)/(1000000000)));
 	}
 
 

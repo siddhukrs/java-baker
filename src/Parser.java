@@ -90,7 +90,7 @@ class Parser{
 	NullPointerException, ClassNotFoundException 
 	{
 		String code = getCodefromSnippet();
-		System.out.println(code);
+		//System.out.println(code);
 		ASTParser parser = getASTParser(code);
 		ASTNode cu = (CompilationUnit) parser.createAST(null);
 		cutype = 0;
