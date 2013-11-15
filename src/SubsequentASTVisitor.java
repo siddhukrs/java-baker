@@ -126,7 +126,6 @@ class SubsequentASTVisitor extends ASTVisitor
 			
 			if(temporaryMap2 == null)
 				return;
-			
 			ArrayList<Integer> rightScopeArray2 = getNodeSet(temporaryMap2, scopeArray);
 			if(rightScopeArray2 == null)
 				return;

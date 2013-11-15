@@ -626,6 +626,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		}
 		else if(expressionString.matches("[A-Z][a-zA-Z]*"))
 		{
+			System.out.println("static" + startPosition);
 			printTypesMap.put(treeNodeString, startPosition);
 			printMethodsMap.put(treeNodeString, startPosition);
 			HashMultimap<ArrayList<Integer>, Node> candidateAccumulator = null;
@@ -740,7 +741,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		}
 		else
 		{
-			
+			//System.out.println("here" + getScopeArray(treeNode.getParent()));
 			ArrayList <Node> replacementClassNodesList= new ArrayList<Node>();
 			HashMultimap<ArrayList<Integer>, Node> candidateAccumulator = null;
 			if(methodReturnTypesMap.containsKey(treeNodeString))
@@ -751,14 +752,16 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 			{
 				candidateAccumulator = HashMultimap.create();
 			}
-			printMethodsMap.put(treeNode.toString(), startPosition);
+			printMethodsMap.put(treeNodeString, startPosition);
 			ArrayList<Node> candidateMethodNodes = model.getCandidateMethodNodes(treeNodeMethodExactName, candidateMethodNodesCache);
-
+			System.out.println(candidateMethodNodes.size());
 			for(Node candidateMethodNode : candidateMethodNodes)
 			{
+				System.out.println("here");
 				if(matchParams(candidateMethodNode, treeNode.arguments())==true)
 				{
 					Node fcname = model.getMethodContainer(candidateMethodNode, methodContainerCache);
+					System.out.println(candidateMethodNode.getProperty("id") + " : " + fcname);
 					if(fcname!=null)
 					{
 						replacementClassNodesList.add(fcname);
@@ -772,7 +775,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 				}
 			}
 			methodReturnTypesMap.put(treeNodeString, candidateAccumulator);
-
+			System.out.println(replacementClassNodesList);
 			if(replacementClassNodesList.isEmpty()==false)
 			{
 				HashMultimap<ArrayList<Integer>, Node> replacer = HashMultimap.create();

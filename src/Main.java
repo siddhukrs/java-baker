@@ -45,7 +45,7 @@ public class Main
 		String input_oracle = "/home/s23subra/workspace/model-generator/maven-graph-database/";
 		String input_file = "sample.txt";
 		int tolerance = 3;
-		int max_cardinality = 100;
+		int max_cardinality = 1000000;
 		Parser parser = new Parser(input_oracle, input_file);
 		CompilationUnit cu = parser.getCompilationUnitFromFile();
 		//System.out.println(cu.toString());
@@ -72,7 +72,7 @@ public class Main
 		FirstASTVisitor first_visitor = new FirstASTVisitor(db,cu,cutype, tolerance, max_cardinality);
 		cu.accept(first_visitor);
 		//System.out.println(first_visitor.printJson().toString(3));
-		//first_visitor.printFields();
+		first_visitor.printFields();
 
 		SubsequentASTVisitor second_visitor = new SubsequentASTVisitor(first_visitor);
 		cu.accept(second_visitor);
@@ -98,7 +98,7 @@ public class Main
 		}
 		//blah
 		//System.out.println("end" + current_visitor.printJson().toString());
-		//current_visitor.printFields();
+		current_visitor.printFields();
 		return current_visitor.printJson();
 	}
 
