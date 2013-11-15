@@ -67,14 +67,16 @@ class FirstASTVisitor extends ASTVisitor
 	public Stack<String> classNames; 
 	public String superclassname;
 	public ArrayList<Object> interfaces;
-	public int tolerance = 3;
+	public int tolerance;
+	public int MAX_CARDINALITY;
 
-
-	public FirstASTVisitor(GraphDatabase db, CompilationUnit cu, int cutype) 
+	public FirstASTVisitor(GraphDatabase db, CompilationUnit cu, int cutype, int tolerance, int max_cardinality) 
 	{
 		this.model = db;
 		this.cu = cu;
 		this.cutype = cutype;
+		this.tolerance = tolerance;
+		MAX_CARDINALITY = max_cardinality;
 		initializeFields();
 		fetchLocalMethods(cu);
 	}

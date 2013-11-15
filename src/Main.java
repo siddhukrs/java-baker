@@ -44,6 +44,8 @@ public class Main
 
 		String input_oracle = "/home/s23subra/workspace/model-generator/maven-graph-database/";
 		String input_file = "sample.txt";
+		int tolerance = 3;
+		int max_cardinality = 100;
 		Parser parser = new Parser(input_oracle, input_file);
 		CompilationUnit cu = parser.getCompilationUnitFromFile();
 		//System.out.println(cu.toString());
@@ -53,21 +55,21 @@ public class Main
 		{
 			System.out.println("db locked");
 		}
-		System.out.println(vistAST(db, cu, cutype).toString(3));
+		System.out.println(vistAST(db, cu, cutype, tolerance, max_cardinality).toString(3));
 
 /*		Connection connection = getDatabase("/home/s23subra/workspace/Java Snippet Parser/javadb.db");
 		Element root = getCodeXML("/home/s23subra/workspace/stackoverflow/java_codes_tags.xml");
-		iterateOver(root, connection, parser);*/
+		iterateOver(root, connection, parser, tolerance, max_cardinality);*/
 		long end = System.nanoTime();
 		//System.out.println("Total Time" + " - " + String.valueOf((double)(end-start)/(1000000000)));
 	}
 
 
-	private static JSONObject vistAST(GraphDatabase db, CompilationUnit cu, int cutype)
+	private static JSONObject vistAST(GraphDatabase db, CompilationUnit cu, int cutype, int tolerance, int max_cardinality)
 	{
 		
 		//System.out.println("start");
-		FirstASTVisitor first_visitor = new FirstASTVisitor(db,cu,cutype);
+		FirstASTVisitor first_visitor = new FirstASTVisitor(db,cu,cutype, tolerance, max_cardinality);
 		cu.accept(first_visitor);
 		//System.out.println(first_visitor.printJson().toString(3));
 		//first_visitor.printFields();
@@ -128,7 +130,7 @@ public class Main
 			}
 		} );
 	}
-	public static void iterateOver(Element root, Connection connection, Parser parser) throws NullPointerException, IOException, ClassNotFoundException, SQLException, TimeoutException
+	public static void iterateOver(Element root, Connection connection, Parser parser,final int tolerance,final int max_cardinality) throws NullPointerException, IOException, ClassNotFoundException, SQLException, TimeoutException
 	{
 
 		int finished = 0;
@@ -162,7 +164,7 @@ public class Main
 				Callable<JSONObject> call = new Callable<JSONObject>() {
 					public JSONObject call() 
 					{
-						JSONObject jsonObject = vistAST(db, cu, cutype);
+						JSONObject jsonObject = vistAST(db, cu, cutype, tolerance, max_cardinality);
 						return jsonObject;
 					}
 				};
@@ -321,7 +323,7 @@ public class Main
 							Callable<JSONObject> task = new Callable<JSONObject>() {
 								public JSONObject call() 
 								{
-									return vistAST(db, cu, cutype);
+									return vistAST(db, cu, cutype, 3, 20);
 								}
 							};
 							Future<JSONObject> future = executor.submit(task);

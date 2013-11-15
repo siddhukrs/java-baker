@@ -40,8 +40,8 @@ class SubsequentASTVisitor extends ASTVisitor
 	public Stack<String> classNames;
 	public String superclassname;
 	public ArrayList<Object> interfaces;
-	public int tolerance = 3;
-	public int MAX_CARDINALITY = 20;
+	public int tolerance;
+	public int MAX_CARDINALITY;
 	
 	public void printFields()
 	{
@@ -71,6 +71,8 @@ class SubsequentASTVisitor extends ASTVisitor
 		interfaces = previousVisitor.interfaces;
 		methodContainerCache = previousVisitor.methodContainerCache;
 		methodReturnCache = previousVisitor.methodReturnCache;
+		tolerance = previousVisitor.tolerance;
+		MAX_CARDINALITY = previousVisitor.MAX_CARDINALITY;
 	}
 	
 	public SubsequentASTVisitor(SubsequentASTVisitor previousVisitor) 
@@ -90,6 +92,8 @@ class SubsequentASTVisitor extends ASTVisitor
 		interfaces = previousVisitor.interfaces;
 		methodContainerCache = previousVisitor.methodContainerCache;
 		methodReturnCache = previousVisitor.methodReturnCache;
+		tolerance = previousVisitor.tolerance;
+		MAX_CARDINALITY = previousVisitor.MAX_CARDINALITY;
 	}
 
 	private ArrayList<Integer> getScopeArray(ASTNode treeNode)
@@ -119,6 +123,10 @@ class SubsequentASTVisitor extends ASTVisitor
 		if(expression==null)
 		{
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap2 = methodReturnTypesMap.get(treeNodeString);
+			
+			if(temporaryMap2 == null)
+				return;
+			
 			ArrayList<Integer> rightScopeArray2 = getNodeSet(temporaryMap2, scopeArray);
 			if(rightScopeArray2 == null)
 				return;
