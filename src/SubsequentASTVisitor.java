@@ -42,6 +42,7 @@ class SubsequentASTVisitor extends ASTVisitor
 	public ArrayList<Object> interfaces;
 	public int tolerance;
 	public int MAX_CARDINALITY;
+	private HashMultimap<String, String> localMethods;
 	
 	public void printFields()
 	{
@@ -52,6 +53,7 @@ class SubsequentASTVisitor extends ASTVisitor
 		System.out.println("printTypesMap: " + printTypesMap);
 		System.out.println("printMethodsMap: " + printMethodsMap);
 		System.out.println("possibleImportList: " + importList);
+		System.out.println("localMethods: " + localMethods);
 	}
 
 	public SubsequentASTVisitor(FirstASTVisitor previousVisitor) 
@@ -73,6 +75,7 @@ class SubsequentASTVisitor extends ASTVisitor
 		methodReturnCache = previousVisitor.methodReturnCache;
 		tolerance = previousVisitor.tolerance;
 		MAX_CARDINALITY = previousVisitor.MAX_CARDINALITY;
+		localMethods = previousVisitor.localMethods;
 		upDateBasedOnImports();
 	}
 	
@@ -100,6 +103,7 @@ class SubsequentASTVisitor extends ASTVisitor
 		methodReturnCache = previousVisitor.methodReturnCache;
 		tolerance = previousVisitor.tolerance;
 		MAX_CARDINALITY = previousVisitor.MAX_CARDINALITY;
+		localMethods = previousVisitor.localMethods;
 		upDateBasedOnImports();
 	}
 	

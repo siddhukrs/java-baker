@@ -29,22 +29,13 @@ class Parser{
 	{
 		String path = getPath();
 		this.input_file = path + File.separator + input_file_path;
-		//this.input_oracle = path + File.separator + oracle;
 		this.input_oracle = oracle;
-		//setInputFile(input_file_path);
-	}
-
-	private void setInputFile(String input) throws IOException
-	{
-		String path = getPath();
-		this.input_file = path + File.separator + input;
 	}
 
 	private String getPath() throws IOException 
 	{
 		Process p = Runtime.getRuntime().exec("pwd");
-		BufferedReader stdInput = new BufferedReader(new InputStreamReader(
-				p.getInputStream()));
+		BufferedReader stdInput = new BufferedReader(new InputStreamReader(p.getInputStream()));
 		String path = "";
 		String s = "";
 		while ((s = stdInput.readLine()) != null) {
@@ -62,10 +53,9 @@ class Parser{
 		}
 		catch(StoreLockException e)
 		{
-			System.out.println("Database Locked");
+			//System.out.println("Database Locked");
 			return null;
 		}
-		
 	}
 
 	private ASTParser getASTParser(String sourceCode) 
@@ -80,29 +70,37 @@ class Parser{
 
 	private String getCodefromSnippet() throws IOException 
 	{
-		FileInputStream fis = new FileInputStream(this.input_file);
-		DataInputStream in = new DataInputStream(fis);
-		BufferedReader br = new BufferedReader(new InputStreamReader(in));
-		String strLine;
-		String code = new String();
-		while ((strLine = br.readLine()) != null) 
+		BufferedReader br = new BufferedReader(new FileReader(this.input_file));
+		StringBuilder codeBuilder = new StringBuilder();
+		String codeText = null;
+		try 
 		{
-			code = code + strLine + "\n";
+			String strLine = br.readLine();
+			while (strLine != null) 
+			{
+				codeBuilder.append(strLine);
+				codeBuilder.append("\n");
+				strLine = br.readLine();
+			}
 		}
-		br.close();
-		code = code.replace("&lt;", "<");
-		code = code.replace("&gt;", ">");
-		code = code.replace("&amp;", "&");
-		return code;
+		finally
+		{
+			br.close();
+			codeText = codeBuilder.toString();
+			codeText = codeText.replace("&lt;", "<");
+			codeText = codeText.replace("&gt;", ">");
+			codeText = codeText.replace("&amp;", "&");
+		}
+		return codeText;
 	}
 
-	public CompilationUnit getCompilationUnitFromFile() throws IOException,
-	NullPointerException, ClassNotFoundException 
+	public CompilationUnit getCompilationUnitFromFile() throws IOException,	NullPointerException, ClassNotFoundException 
 	{
 		String code = getCodefromSnippet();
-		//System.out.println(code);
 		ASTParser parser = getASTParser(code);
+		//System.out.println("--" + code);
 		ASTNode cu = (CompilationUnit) parser.createAST(null);
+		//System.out.println("++ "+cu.toString());
 		cutype = 0;
 		if (((CompilationUnit) cu).types().isEmpty()) 
 		{
@@ -120,7 +118,7 @@ class Parser{
 					return false;
 				}
 			});
-			if (flag == 1) 
+			if (flag == 1)
 			{
 				// System.out.println("Missing method, wrapper added");
 				s1 = "public class sample{\n public void foo(){\n" + code

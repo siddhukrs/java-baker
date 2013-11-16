@@ -46,7 +46,6 @@ public class Main
 		int max_cardinality = 1000000;
 		Parser parser = new Parser(input_oracle, input_file);
 		CompilationUnit cu = parser.getCompilationUnitFromFile();
-		//System.out.println(cu.toString());
 		int cutype = parser.getCuType();
 		GraphDatabase db = parser.getGraph();
 		if(db == null)
@@ -94,8 +93,6 @@ public class Main
 			previous_visitor = current_visitor;
 			current_visitor = new_visitor;
 		}
-		//blah
-		//System.out.println("end" + current_visitor.printJson().toString());
 		//current_visitor.printFields();
 		return current_visitor.printJson();
 	}

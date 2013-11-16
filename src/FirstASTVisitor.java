@@ -154,6 +154,7 @@ class FirstASTVisitor extends ASTVisitor
 		System.out.println("printTypesMap: " + printTypesMap);
 		System.out.println("printMethodsMap: " + printMethodsMap);
 		System.out.println("possibleImportList: " + importList);
+		System.out.println("localMethods: " + localMethods);
 	}
 	
 	private ArrayList<Node> getNewClassElementsList(ArrayList<Node> celist)
@@ -405,6 +406,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		Expression expression = treeNode.getExpression();
 		String treeNodeMethodExactName = treeNode.getName().toString();
 		String treeNodeString = treeNode.toString();
+		//System.out.println("-- "+treeNodeString);
 		int startPosition = treeNode.getName().getStartPosition();
 		String expressionString = null;
 		
@@ -427,6 +429,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		
 		if(expression==null)
 		{
+			//System.out.println("Here "+ treeNodeString);
 			if(superclassname.isEmpty() == false)
 			{	
 				/*
@@ -444,13 +447,29 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 					candidateAccumulator = HashMultimap.create();
 				}
 				ArrayList<Node> candidateSuperClassNodes = model.getCandidateClassNodes(superclassname, candidateClassNodesCache);
+				
+				
 				candidateSuperClassNodes = getNewClassElementsList(candidateSuperClassNodes);
 				for(Node candidateSuperClass : candidateSuperClassNodes)
 				{
-					//ArrayList<Node> candidateSuperClassMethods = model.getMethodNodes(candidateSuperClass, methodNodesInClassNode);
+					ArrayList<Node> candidateMethods = new ArrayList<Node>();
 					IndexHits<Node> candidateSuperClassMethods = model.getMethodNodesInClassNode(candidateSuperClass, treeNodeMethodExactName);
+					for(Node node : candidateSuperClassMethods)
+					{
+						candidateMethods.add(node);
+					}
+					ArrayList<Node> candidateSuperClassParents = model.getParents(candidateSuperClass);
+					for(Node candidateSuperClassParent : candidateSuperClassParents)
+					{
+						//System.out.println("here" + treeNodeString);
+						IndexHits<Node> candidateSuperClassParentsMethods = model.getMethodNodesInClassNode(candidateSuperClassParent, treeNodeMethodExactName);
+						for(Node node : candidateSuperClassParentsMethods)
+						{
+							candidateMethods.add(node);
+						}
+					}
 					
-					for(Node candidateSuperClassMethod : candidateSuperClassMethods)
+					for(Node candidateSuperClassMethod : candidateMethods)
 					{
 						
 						String candidateMethodExactName = (String)candidateSuperClassMethod.getProperty("exactName");
