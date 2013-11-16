@@ -156,7 +156,7 @@ class FirstASTVisitor extends ASTVisitor
 		System.out.println("possibleImportList: " + importList);
 	}
 	
-	private ArrayList<Node> getNewCeList(ArrayList<Node> celist)
+	private ArrayList<Node> getNewClassElementsList(ArrayList<Node> celist)
 	{
 		ArrayList<Node> templist = new ArrayList<Node>();
 		int flagVar2 = 0;
@@ -250,7 +250,7 @@ class FirstASTVisitor extends ASTVisitor
 
 			ArrayList<Node> candidateClassNodes = model.getCandidateClassNodes(treeNodeType, candidateClassNodesCache);
 
-			candidateClassNodes = getNewCeList(candidateClassNodes);
+			candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 			for(Node candidateClass : candidateClassNodes)
 			{
 				candidateAccumulator.put(variableScopeArray, candidateClass);
@@ -284,7 +284,7 @@ class FirstASTVisitor extends ASTVisitor
 			candidateAccumulator = HashMultimap.create();
 		}
 		ArrayList<Node> candidateClassNodes=model.getCandidateClassNodes(variableType, candidateClassNodesCache);
-		candidateClassNodes = getNewCeList(candidateClassNodes);
+		candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 		for(Node candidateClass : candidateClassNodes)
 		{
 			int startPosition = treeNode.getParameter().getType().getStartPosition();
@@ -355,7 +355,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 			else
 				treeNodeType = treeNode.getType().toString();
 			ArrayList<Node> candidateClassNodes = model.getCandidateClassNodes(treeNodeType, candidateClassNodesCache);
-			candidateClassNodes = getNewCeList(candidateClassNodes);
+			candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 			for(Node candidateClass : candidateClassNodes)
 			{
 				candidateAccumulator.put(variableScopeArray, candidateClass);
@@ -444,7 +444,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 					candidateAccumulator = HashMultimap.create();
 				}
 				ArrayList<Node> candidateSuperClassNodes = model.getCandidateClassNodes(superclassname, candidateClassNodesCache);
-				candidateSuperClassNodes = getNewCeList(candidateSuperClassNodes);
+				candidateSuperClassNodes = getNewClassElementsList(candidateSuperClassNodes);
 				for(Node candidateSuperClass : candidateSuperClassNodes)
 				{
 					//ArrayList<Node> candidateSuperClassMethods = model.getMethodNodes(candidateSuperClass, methodNodesInClassNode);
@@ -539,11 +539,8 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 			printMethodsMap.put(treeNodeString, startPosition);
 
 			ArrayList<Node> replacementClassNodesList = new ArrayList<Node>();
-			//System.out.println(treeNodeString + "!!");
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap = variableTypeMap.get(expressionString);
 			ArrayList<Integer> rightScopeArray = getNodeSet(temporaryMap, scopeArray);
-			//System.out.println(temporaryMap);
-			//System.out.println(scopeArray);
 			if(rightScopeArray == null)
 				return;
 
@@ -561,12 +558,10 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 
 			for(Node candidateClassNode : candidateClassNodes)
 			{
-				//ArrayList<Node> candidateMethodNodes = model.getMethodNodes(candidateClassNode, methodNodesInClassNode);
 				IndexHits<Node> candidateMethodNodes = model.getMethodNodesInClassNode(candidateClassNode,treeNodeMethodExactName);
 				int hasCandidateFlag = 0;
 				for(Node candidateMethodNode : candidateMethodNodes)
 				{
-					//System.out.println(candidateMethodNode.getProperty("id") + " " + candidateClassNode.getProperty("id") + " " + treeNodeMethodExactName);
 					String candidateMethodExactName = (String)candidateMethodNode.getProperty("exactName");
 					if((candidateMethodExactName).equals(treeNodeMethodExactName))
 					{
@@ -588,7 +583,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 				if(hasCandidateFlag == 0)
 				{
 					ArrayList<Node> parentNodeList = model.getParents(candidateClassNode);
-					parentNodeList = getNewCeList(parentNodeList);
+					parentNodeList = getNewClassElementsList(parentNodeList);
 					for(Node parentNode: parentNodeList)
 					{
 						//ArrayList<Node> methodNodes = model.getMethodNodes(parentNode, methodNodesInClassNode);
@@ -626,7 +621,6 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		}
 		else if(expressionString.matches("[A-Z][a-zA-Z]*"))
 		{
-			System.out.println("static" + startPosition);
 			printTypesMap.put(treeNodeString, startPosition);
 			printMethodsMap.put(treeNodeString, startPosition);
 			HashMultimap<ArrayList<Integer>, Node> candidateAccumulator = null;
@@ -641,7 +635,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 			ArrayList <Node> replacementClassNodesList = new ArrayList<Node>();
 			
 			ArrayList<Node> candidateClassNodes = model.getCandidateClassNodes(expressionString, candidateClassNodesCache);
-			candidateClassNodes = getNewCeList(candidateClassNodes);
+			candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 			for(Node candidateClassNode : candidateClassNodes)
 			{
 				//ArrayList<Node> candidateMethodNodes = model.getMethodNodes(candidateClassNode, methodNodesInClassNode);
@@ -677,7 +671,6 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		}
 		else if(methodReturnTypesMap.containsKey(expressionString))
 		{
-			//System.out.println("here now");
 			printTypesMap.put(treeNodeString, startPosition);
 			printMethodsMap.put(treeNodeString, startPosition);
 
@@ -754,14 +747,11 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 			}
 			printMethodsMap.put(treeNodeString, startPosition);
 			ArrayList<Node> candidateMethodNodes = model.getCandidateMethodNodes(treeNodeMethodExactName, candidateMethodNodesCache);
-			System.out.println(candidateMethodNodes.size());
 			for(Node candidateMethodNode : candidateMethodNodes)
 			{
-				System.out.println("here");
 				if(matchParams(candidateMethodNode, treeNode.arguments())==true)
 				{
 					Node fcname = model.getMethodContainer(candidateMethodNode, methodContainerCache);
-					System.out.println(candidateMethodNode.getProperty("id") + " : " + fcname);
 					if(fcname!=null)
 					{
 						replacementClassNodesList.add(fcname);
@@ -775,7 +765,6 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 				}
 			}
 			methodReturnTypesMap.put(treeNodeString, candidateAccumulator);
-			System.out.println(replacementClassNodesList);
 			if(replacementClassNodesList.isEmpty()==false)
 			{
 				HashMultimap<ArrayList<Integer>, Node> replacer = HashMultimap.create();
@@ -1011,7 +1000,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 			else
 				parameterType = param.get(i).getType().toString();
 			ArrayList<Node> candidateClassNodes = model.getCandidateClassNodes(parameterType, candidateClassNodesCache);
-			candidateClassNodes = getNewCeList(candidateClassNodes);
+			candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 			
 			for(Node candidateClassNode : candidateClassNodes)
 			{
@@ -1033,7 +1022,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		if(superclassname!=null)
 		{
 			ArrayList<Node> candidateClassNodes = model.getCandidateClassNodes(superclassname, candidateClassNodesCache);
-			candidateClassNodes = getNewCeList(candidateClassNodes);
+			candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 			for(Node candidateClassNode : candidateClassNodes)
 			{
 				//Collection<Node> candidateMethodNodes=model.getMethodNodes(candidateClassNode, methodNodesInClassNode);
@@ -1067,7 +1056,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 			for(int i=0;i<interfaces.size();i++)
 			{
 				ArrayList<Node> candidateClassNodes = model.getCandidateClassNodes(interfaces.get(i).toString(), candidateClassNodesCache);
-				candidateClassNodes = getNewCeList(candidateClassNodes);
+				candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 				for(Node candidateClassNode : candidateClassNodes)
 				{
 					//Collection<Node> candidateMethodNodes = model.getMethodNodes(candidateClassNode, methodNodesInClassNode);
@@ -1115,7 +1104,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		}
 		int startPosition = treeNode.getStartPosition();
 		ArrayList<Node> candidateClassNodes = model.getCandidateClassNodes(classNames.peek(), candidateClassNodesCache);
-		candidateClassNodes = getNewCeList(candidateClassNodes);
+		candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 		for(Node candidateClassNode : candidateClassNodes)
 		{
 			//ArrayList<Node> candidateMethodNodes = model.getMethodNodes(candidateClassNode, methodNodesInClassNode);
@@ -1167,7 +1156,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		}
 		//System.out.println("catch inv 1");
 		ArrayList<Node> candidateClassNodes = model.getCandidateClassNodes(node.getException().getType().toString(), candidateClassNodesCache);
-		candidateClassNodes = getNewCeList(candidateClassNodes);
+		candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 		for(Node candidateClassNode : candidateClassNodes)
 		{
 			temporaryMap.put(scopeArray, candidateClassNode);
@@ -1201,7 +1190,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 			candidateAccumulator = HashMultimap.create();
 		}
 		ArrayList<Node> candidateClassNodes = model.getCandidateClassNodes(superclassname, candidateClassNodesCache);
-		candidateClassNodes = getNewCeList(candidateClassNodes);
+		candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 		for(Node candidateClassNode : candidateClassNodes)
 		{
 			//Collection<Node>candidateMethodElements = model.getMethodNodes(candidateClassNode, methodNodesInClassNode);
@@ -1252,7 +1241,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		}
 		String treeNodeName = treeNode.getName().toString();
 		ArrayList<Node> candidateClassNodes = model.getCandidateClassNodes(superclassname, candidateClassNodesCache);
-		candidateClassNodes = getNewCeList(candidateClassNodes);
+		candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 		ArrayList <Node> clist= new ArrayList<Node>();
 
 		printMethodsMap.put(treeNode.toString(), startPosition);
@@ -1302,7 +1291,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 					String methodDeclarationName = md.getName().toString();
 					int startPosition = md.getStartPosition();
 					ArrayList <Node> candidateClassNodes = model.getCandidateClassNodes(treeNode.getType().toString(), candidateClassNodesCache);
-					candidateClassNodes = getNewCeList(candidateClassNodes);
+					candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 					for(Node candidateClassNode : candidateClassNodes)
 					{
 						//Collection<Node>candidateMethodNodes = model.getMethodNodes(candidateClassNode, methodNodesInClassNode);
@@ -1339,7 +1328,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 		printMethodsMap.put(treeNodeString, startPosition);
 		printTypesMap.put(treeNodeString, startPosition);
 		ArrayList<Node> candidateClassNodes = model.getCandidateClassNodes(treeNode.getType().toString(), candidateClassNodesCache);
-		candidateClassNodes = getNewCeList(candidateClassNodes);
+		candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 		
 		HashMultimap<ArrayList<Integer>, Node> candidateAccumulator = null;
 		if(methodReturnTypesMap.containsKey(treeNodeString))
@@ -1408,7 +1397,7 @@ getCandidateClassNodes(((VariableDeclarationFragment)node.initializers().get(j))
 	public boolean visit(CastExpression node)
 	{
 		ArrayList <Node> candidateClassNodes = model.getCandidateClassNodes(node.getType().toString(), candidateClassNodesCache);
-		candidateClassNodes = getNewCeList(candidateClassNodes);
+		candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 
 		HashMultimap<ArrayList<Integer>, Node> temp1= null;
 		HashMultimap<ArrayList<Integer>, Node> temp2= null;

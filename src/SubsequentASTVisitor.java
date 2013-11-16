@@ -73,6 +73,12 @@ class SubsequentASTVisitor extends ASTVisitor
 		methodReturnCache = previousVisitor.methodReturnCache;
 		tolerance = previousVisitor.tolerance;
 		MAX_CARDINALITY = previousVisitor.MAX_CARDINALITY;
+		upDateBasedOnImports();
+	}
+	
+	private static void upDateBasedOnImports()
+	{
+		//Update variableTypeMap to hold only a possible import if one exists. Else leave untouched.
 	}
 	
 	public SubsequentASTVisitor(SubsequentASTVisitor previousVisitor) 
@@ -94,6 +100,50 @@ class SubsequentASTVisitor extends ASTVisitor
 		methodReturnCache = previousVisitor.methodReturnCache;
 		tolerance = previousVisitor.tolerance;
 		MAX_CARDINALITY = previousVisitor.MAX_CARDINALITY;
+		upDateBasedOnImports();
+	}
+	
+	private HashSet<Node> getNewClassElementsList(Set<Node> candidateClassNodes)
+	{
+		HashSet<Node> templist = new HashSet<Node>();
+		int flagVar2 = 0;
+		int flagVar3 = 0;
+		for(Node ce: candidateClassNodes)
+		{
+			String name = (String) ce.getProperty("id");
+			int flagVar1 = 0;
+			if(importList.isEmpty() == false)
+			{
+				for(String importItem : importList)
+				{
+					if(name.startsWith(importItem) || name.startsWith("java.lang"))
+					{
+						templist.clear();
+						templist.add(ce);
+						flagVar1 = 1;
+						break;
+					}
+				}
+			}
+			if(flagVar1==1)
+				break;
+			/*else if(name.startsWith("java."))
+			{
+				if(flagVar2==0)
+				{
+					templist.clear();
+					flagVar2 =1;
+				}
+				templist.add(ce);
+				flagVar3 = 1;
+			}*/
+			else
+			{
+				if(flagVar3 == 0)
+					templist.add(ce);
+			}
+		}
+		return templist;
 	}
 
 	private ArrayList<Integer> getScopeArray(ASTNode treeNode)
@@ -151,7 +201,7 @@ class SubsequentASTVisitor extends ASTVisitor
 		}
 		else if(expression.toString().contains("System."))
 		{
-
+			
 		}
 		else if(expression.getNodeType() == 2)
 		{
@@ -163,9 +213,8 @@ class SubsequentASTVisitor extends ASTVisitor
 			ArrayList<Integer> rightScopeArray1 = getNodeSet(temporaryMap1, scopeArray);
 			if(rightScopeArray1 == null)
 				return;
-			//System.out.println(treeNodeString + rightScopeArray1);
 			Set<Node> candidateClassNodes = temporaryMap1.get(rightScopeArray1);
-			//System.out.println("candidateClassNodes "+candidateClassNodes);
+			candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 			
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap2 = methodReturnTypesMap.get(treeNodeString);
 			ArrayList<Integer> rightScopeArray2 = getNodeSet(temporaryMap2, scopeArray);
@@ -190,6 +239,18 @@ class SubsequentASTVisitor extends ASTVisitor
 					newClassNodes.add(parentNode);
 				}
 			}
+			
+			if(newClassNodes.size() < tolerance)
+			{
+				for(Node newClassNode : newClassNodes)
+				{
+					String possibleImport = getCorrespondingImport(newClassNode.getProperty("id").toString());
+					if(possibleImport!=null)
+					{
+						importList.add(possibleImport);
+					}
+				}
+			}
 			temporaryMap1.removeAll(rightScopeArray1);
 			temporaryMap1.putAll(rightScopeArray1, newClassNodes);
 			printmethods.removeAll(startPosition);
@@ -199,10 +260,12 @@ class SubsequentASTVisitor extends ASTVisitor
 		}
 		else if(methodReturnTypesMap.containsKey(expression.toString()))
 		{
-			//System.out.println("-- here");
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap1 = methodReturnTypesMap.get(expression.toString());
 			ArrayList<Integer> rightScopeArray1 = getNodeSet(temporaryMap1, scopeArray);
+			if(rightScopeArray1 == null)
+				return;
 			Set<Node> candidateClassNodes = temporaryMap1.get(rightScopeArray1);
+			candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 			
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap2 = methodReturnTypesMap.get(treeNodeString);
 			ArrayList<Integer> rightScopeArray2 = getNodeSet(temporaryMap2, scopeArray);
@@ -229,6 +292,15 @@ class SubsequentASTVisitor extends ASTVisitor
 					newClassNodes.add(parentNode);
 				}
 			}
+			if(newClassNodes.size() < tolerance)
+			{
+				for(Node newClassNode : newClassNodes)
+				{
+					String possibleImport = getCorrespondingImport(newClassNode.getProperty("id").toString());
+					if(possibleImport!=null)
+						importList.add(possibleImport);
+				}
+			}
 			temporaryMap1.removeAll(rightScopeArray1);
 			temporaryMap1.putAll(rightScopeArray1, newClassNodes);
 			printmethods.removeAll(startPosition);
@@ -238,6 +310,17 @@ class SubsequentASTVisitor extends ASTVisitor
 		}
 		long end = System.nanoTime();
 		//System.out.println(model.getCurrentMethodName() + " - " + treeNode.toString() + " : " + String.valueOf((double)(end-start)/1000000000));
+	}
+
+	private String getCorrespondingImport(String classID) 
+	{
+		int loc = classID.indexOf('.');
+		if(loc == -1)
+			return null;
+		else
+		{
+			return(classID.substring(0, classID.lastIndexOf("."))+".*") ;
+		}
 	}
 
 	private ArrayList<Integer> getNodeSet(HashMultimap<ArrayList<Integer>, Node> celist2, ArrayList<Integer> scopeArray) 

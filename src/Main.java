@@ -13,8 +13,6 @@ import org.dom4j.io.SAXReader;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.neo4j.kernel.StoreLockException;
-import org.neo4j.kernel.impl.transaction.LockException;
 
 
 
@@ -72,7 +70,7 @@ public class Main
 		FirstASTVisitor first_visitor = new FirstASTVisitor(db,cu,cutype, tolerance, max_cardinality);
 		cu.accept(first_visitor);
 		//System.out.println(first_visitor.printJson().toString(3));
-		first_visitor.printFields();
+		//first_visitor.printFields();
 
 		SubsequentASTVisitor second_visitor = new SubsequentASTVisitor(first_visitor);
 		cu.accept(second_visitor);
@@ -98,7 +96,7 @@ public class Main
 		}
 		//blah
 		//System.out.println("end" + current_visitor.printJson().toString());
-		current_visitor.printFields();
+		//current_visitor.printFields();
 		return current_visitor.printJson();
 	}
 
