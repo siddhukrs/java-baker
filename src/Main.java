@@ -43,7 +43,7 @@ public class Main
 		String input_oracle = "/home/s23subra/workspace/model-generator/maven-graph-database/";
 		String input_file = "sample.txt";
 		int tolerance = 3;
-		int max_cardinality = 1000000;
+		int max_cardinality = 10;
 		Parser parser = new Parser(input_oracle, input_file);
 		CompilationUnit cu = parser.getCompilationUnitFromFile();
 		int cutype = parser.getCuType();
