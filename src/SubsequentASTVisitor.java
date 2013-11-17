@@ -131,7 +131,7 @@ class SubsequentASTVisitor extends ASTVisitor
 			}
 			if(flagVar1==1)
 				break;
-			/*else if(name.startsWith("java."))
+			else if(name.startsWith("java."))
 			{
 				if(flagVar2==0)
 				{
@@ -140,7 +140,7 @@ class SubsequentASTVisitor extends ASTVisitor
 				}
 				templist.add(ce);
 				flagVar3 = 1;
-			}*/
+			}
 			else
 			{
 				if(flagVar3 == 0)
