@@ -46,6 +46,7 @@ public class Main
 		int max_cardinality = 10;
 		Parser parser = new Parser(input_oracle, input_file);
 		CompilationUnit cu = parser.getCompilationUnitFromFile();
+		//System.out.println(cu.toString());
 		int cutype = parser.getCuType();
 		GraphDatabase db = parser.getGraph();
 		if(db == null)

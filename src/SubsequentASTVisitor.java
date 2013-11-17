@@ -177,7 +177,6 @@ class SubsequentASTVisitor extends ASTVisitor
 		if(expression==null)
 		{
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap2 = methodReturnTypesMap.get(treeNodeString);
-			
 			if(temporaryMap2 == null)
 				return;
 			ArrayList<Integer> rightScopeArray2 = getNodeSet(temporaryMap2, scopeArray);
@@ -214,13 +213,16 @@ class SubsequentASTVisitor extends ASTVisitor
 		{
 			//System.out.println("-- here " + startPosition);
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap1 = variableTypeMap.get(expression.toString());
+			if(temporaryMap1 == null)
+				return;
 			ArrayList<Integer> rightScopeArray1 = getNodeSet(temporaryMap1, scopeArray);
 			if(rightScopeArray1 == null)
 				return;
 			Set<Node> candidateClassNodes = temporaryMap1.get(rightScopeArray1);
 			candidateClassNodes = getNewClassElementsList(candidateClassNodes);
-			
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap2 = methodReturnTypesMap.get(treeNodeString);
+			if(temporaryMap2 == null)
+				return;
 			ArrayList<Integer> rightScopeArray2 = getNodeSet(temporaryMap2, scopeArray);
 			if(rightScopeArray2 == null)
 				return;
@@ -265,6 +267,8 @@ class SubsequentASTVisitor extends ASTVisitor
 		else if(methodReturnTypesMap.containsKey(expression.toString()))
 		{
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap1 = methodReturnTypesMap.get(expression.toString());
+			if(temporaryMap1 == null)
+				return;
 			ArrayList<Integer> rightScopeArray1 = getNodeSet(temporaryMap1, scopeArray);
 			if(rightScopeArray1 == null)
 				return;
@@ -272,6 +276,8 @@ class SubsequentASTVisitor extends ASTVisitor
 			candidateClassNodes = getNewClassElementsList(candidateClassNodes);
 			
 			HashMultimap<ArrayList<Integer>, Node> temporaryMap2 = methodReturnTypesMap.get(treeNodeString);
+			if(temporaryMap2 == null)
+				return;
 			ArrayList<Integer> rightScopeArray2 = getNodeSet(temporaryMap2, scopeArray);
 			if(rightScopeArray2 == null)
 				return;
